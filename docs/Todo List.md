@@ -36,7 +36,7 @@
 - [ ] **VEREIST** Maak een Klassendiagram met OO-structuur (domain, API, database).
 - [ ] **VEREIST** Maak een Packagediagram met logische groepering.
 - [ ] **VEREIST** Maak minimaal drie Sequence diagrams voor belangrijke interacties.
-- [ ] **VEREIST** Bepaal API-architectuur (routes, endpoints, datamodellen).
+- [X] **VEREIST** Bepaal API-architectuur (routes, endpoints, datamodellen).
 - [ ] **VEREIST** Ontwerp Android-navigatiestructuur met ten minste drie schermen.
 - [ ] **AANBEVOLEN** Maak wireframes of mockups van de app in Figma.
 
