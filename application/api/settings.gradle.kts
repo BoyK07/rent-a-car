@@ -1,4 +1,4 @@
-rootProject.name = "inventory"
+rootProject.name = "rentmycar"
 
 dependencyResolutionManagement {
     repositories {
