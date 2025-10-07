@@ -1,0 +1,28 @@
+app:
+  runMigrationsOnStartup: true
+
+ktor:
+  application:
+    modules:
+      - dev.koenv.inventory.ApplicationKt.module
+  deployment:
+    port: 8080
+  development: true
+
+jwt:
+  domain: "https://jwt-provider-domain/"
+  audience: "jwt-audience"
+  realm: "ktor sample app"
+
+postgres:
+  embedded: true                 # true = H2 in-memory; false = Postgres
+  url: "jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+  user: "sa"
+  password: ""
+  pool:
+    maxPoolSize: 8
+    minIdle: 0
+
+database:
+  schemaStrategy: flyway
+  migrationsLocation: "classpath:migrations"
