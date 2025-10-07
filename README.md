@@ -69,3 +69,7 @@ Het doel van **Rent My Car** is om:
 | **Doel** | Duurzamer vervoer en kostenbewust autodelen stimuleren |
 
 ---
+
+## Licentie
+
+Dit project is gelicentieerd onder de MIT License – zie het [LICENSE-bestand](LICENSE) voor meer informatie.
