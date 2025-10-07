@@ -1,4 +1,8 @@
 # Rent My Car
+- Boy Krijnen
+- Imad Amazyan
+- Koen van Vlimmeren
+- Robin van Oudheusden
 
 ## Inleiding
 **Rent My Car** is een platform dat duurzaam vervoer stimuleert door autodelen toegankelijk te maken. Het systeem maakt het mogelijk voor gebruikers om hun eigen auto aan te bieden voor verhuur, en voor anderen om eenvoudig een auto te reserveren en te huren voor een dagdeel.
