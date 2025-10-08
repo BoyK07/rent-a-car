@@ -2,21 +2,21 @@ package dev.koenv.rentmycar.storage.db
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import dev.koenv.rentmycar.config.postgresConfig
+import dev.koenv.rentmycar.config.mySqlConfig
 import io.ktor.server.application.*
 import org.jetbrains.exposed.sql.Database
 
 object DatabaseFactory {
 
     private fun createHikari(app: Application): HikariDataSource {
-        val pg = app.postgresConfig()
+        val mysql = app.mySqlConfig()
         val hc = HikariConfig().apply {
-            jdbcUrl = pg.url
-            username = pg.user
-            password = pg.password
-            driverClassName = if (pg.embedded) "org.h2.Driver" else "org.postgresql.Driver"
-            maximumPoolSize = app.environment.config.propertyOrNull("postgres.pool.maxPoolSize")?.getString()?.toInt() ?: 8
-            minimumIdle = app.environment.config.propertyOrNull("postgres.pool.minIdle")?.getString()?.toInt() ?: 0
+            jdbcUrl = mysql.url
+            username = mysql.user
+            password = mysql.password
+            driverClassName = if (mysql.embedded) "org.h2.Driver" else "com.mysql.cj.jdbc.Driver"
+            maximumPoolSize = app.environment.config.propertyOrNull("mysql.pool.maxPoolSize")?.getString()?.toInt() ?: 8
+            minimumIdle = app.environment.config.propertyOrNull("mysql.pool.minIdle")?.getString()?.toInt() ?: 0
             isAutoCommit = false
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             validate()
