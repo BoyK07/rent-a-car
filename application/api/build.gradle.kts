@@ -2,7 +2,7 @@ val exposed_version: String by project
 val h2_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
-val postgres_version: String by project
+val mysql_version: String by project
 val prometheus_version: String by project
 val hikari_version: String by project
 val flyway_version: String by project
@@ -62,14 +62,14 @@ dependencies {
 
     // --- Database Drivers ---
     implementation("com.h2database:h2:$h2_version")              // Local dev/testing
-    implementation("org.postgresql:postgresql:$postgres_version") // Production/Postgres
+    implementation("mysql:mysql-connector-j:$mysql_version") // Production/MySQL
 
     // --- Connection Pool ---
     implementation("com.zaxxer:HikariCP:$hikari_version")
 
     // --- Database Migrations ---
     implementation("org.flywaydb:flyway-core:$flyway_version")
-    implementation("org.flywaydb:flyway-database-postgresql:$flyway_version")
+    implementation("org.flywaydb:flyway-mysql:$flyway_version")
 
     // --- Logging ---
     implementation("ch.qos.logback:logback-classic:$logback_version")

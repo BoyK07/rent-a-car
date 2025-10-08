@@ -20,7 +20,7 @@ object MigrationGenerator {
 
     fun generate() {
         val h2 = JdbcDataSource().apply {
-            setURL("jdbc:h2:mem:diff;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+            setURL("jdbc:h2:mem:diff;MODE=MySQL;DB_CLOSE_DELAY=-1")
             user = "sa"
             password = ""
         }
@@ -42,7 +42,7 @@ object MigrationGenerator {
 
     fun migrate() {
         val flyway = Flyway.configure()
-            .dataSource("jdbc:postgresql://localhost:5432/yourdb", "user", "password")
+            .dataSource("jdbc:mysql://localhost:3306/yourdb", "user", "password")
             .locations("classpath:migrations")
             .load()
         flyway.migrate()
