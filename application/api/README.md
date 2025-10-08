@@ -31,7 +31,7 @@ Here's a list of features included in this project:
 | [Request Validation](https://start.ktor.io/p/request-validation)       | Adds validation for incoming requests                                              |
 | [Resources](https://start.ktor.io/p/resources)                         | Provides type-safe routing                                                         |
 | [Status Pages](https://start.ktor.io/p/status-pages)                   | Provides exception handling for routes                                             |
-| [MySQL](https://start.ktor.io/p/mysql)                           | Adds MySQL database to your application                                         |
+| [MySQL](https://start.ktor.io/p/mysql)                                 | Adds MySQL database to your application                                            |
 
 ## Building & Running
 
