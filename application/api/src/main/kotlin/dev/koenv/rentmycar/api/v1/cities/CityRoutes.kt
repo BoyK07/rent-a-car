@@ -1,42 +1,32 @@
 package dev.koenv.rentmycar.api.v1.cities
 
 import dev.koenv.rentmycar.domain.model.City
-import dev.koenv.rentmycar.plugins.cityService
+import dev.koenv.rentmycar.domain.services.CityService
+import dev.koenv.rentmycar.storage.repositories.CityRepositoryImpl
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.util.UUID
 
 fun Route.cityRoutes() {
-    val service = application.cityService()
+    val service = CityService(CityRepositoryImpl())
 
     route("/cities") {
         post {
-            val city = call.receive<City>()
-            val id = service.create(city)
-            call.respond(HttpStatusCode.Created, id)
+            TODO("Not yet implemented")
         }
 
         get("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid ID")
-            val city = service.read(id) ?: return@get call.respond(HttpStatusCode.NotFound)
-            call.respond(city)
+            TODO("Not yet implemented")
         }
 
         put("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid ID")
-            val city = call.receive<City>()
-            val ok = service.update(id, city)
-            call.respond(if (ok) HttpStatusCode.OK else HttpStatusCode.NotFound)
+            TODO("Not yet implemented")
         }
 
         delete("/{id}") {
-            val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid ID")
-            val ok = service.delete(id)
-            call.respond(if (ok) HttpStatusCode.OK else HttpStatusCode.NotFound)
+            TODO("Not yet implemented")
         }
     }
 }

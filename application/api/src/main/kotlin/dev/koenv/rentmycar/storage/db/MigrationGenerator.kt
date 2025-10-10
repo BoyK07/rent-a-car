@@ -1,59 +1,76 @@
+@file:OptIn(org.jetbrains.exposed.v1.core.ExperimentalDatabaseMigrationApi::class)
+
 package dev.koenv.rentmycar.storage.db
 
 import org.flywaydb.core.Flyway
-import org.h2.jdbcx.JdbcDataSource
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.SchemaUtils.createStatements
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
+import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.jvm.jvmName
 import java.io.File
 
 object MigrationGenerator {
-
-    private val tables: List<Table> = listOf(
-        dev.koenv.rentmycar.storage.db.tables.UsersTable,
-        dev.koenv.rentmycar.storage.db.tables.CitiesTable
-    )
-
-    private val migrationsDir = File("src/main/resources/migrations")
-
-    fun generate() {
-        val h2 = JdbcDataSource().apply {
-            setURL("jdbc:h2:mem:diff;MODE=MySQL;DB_CLOSE_DELAY=-1")
-            user = "sa"
-            password = ""
+    private fun discoverTables(packageName: String): List<Table> {
+        val tables = mutableListOf<Table>()
+        val pkgPath = packageName.replace('.', '/')
+        val cl = Thread.currentThread().contextClassLoader
+        val resources = cl.getResources(pkgPath)
+        while (resources.hasMoreElements()) {
+            val url = resources.nextElement()
+            val dir = File(url.file)
+            if (!dir.exists()) continue
+            dir.walkTopDown()
+                .filter { it.extension == "class" }
+                .forEach { f ->
+                    val className = "$packageName.${f.nameWithoutExtension}"
+                    try {
+                        val kClass = Class.forName(className).kotlin
+                        if (kClass.isSubclassOf(Table::class)) {
+                            kClass.objectInstance?.let { tables += it as Table }
+                        }
+                    } catch (_: Throwable) {}
+                }
         }
-
-        val db = Database.connect(h2)
-
-        transaction(db) {
-            SchemaUtils.createMissingTablesAndColumns(*tables.toTypedArray())
-
-            val schemaSQL = createStatements(*tables.toTypedArray()).joinToString(";\n")
-            val version = nextVersion()
-            val filename = "V${version}__auto_generated.sql"
-            val file = File(migrationsDir, filename)
-
-            file.writeText(schemaSQL + ";\n")
-            println("✅ Migration generated: ${file.path}")
-        }
+        return tables
     }
 
-    fun migrate() {
-        val flyway = Flyway.configure()
-            .dataSource("jdbc:mysql://localhost:3306/yourdb", "user", "password")
-            .locations("classpath:migrations")
+    @JvmStatic
+    fun main(args: Array<String>) {
+        // Scratch DB: H2 in-memory, MySQL compatibility
+        val url = "jdbc:h2:mem:migrations;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;"
+        val driver = "org.h2.Driver"
+        val user = ""
+        val pass = ""
+
+        // 1) Recreate current baseline by applying existing SQL migrations into the scratch DB
+        Flyway.configure()
+            .dataSource(url, user, pass)
+            .locations("classpath:migrations") // your existing files
             .load()
-        flyway.migrate()
-        println("✅ Database migrated successfully.")
-    }
+            .migrate()
 
-    private fun nextVersion(): Int {
-        val files = migrationsDir.listFiles()?.filter { it.name.startsWith("V") } ?: emptyList()
-        val maxVersion = files.mapNotNull {
-            Regex("""V(\d+)__""").find(it.name)?.groupValues?.get(1)?.toIntOrNull()
-        }.maxOrNull() ?: 0
-        return maxVersion + 1
+        // 2) Connect Exposed to that scratch DB
+        val db = Database.connect(url, driver, user, pass)
+
+        // 3) Discover tables from code
+        val tables = discoverTables("dev.koenv.rentmycar.storage.db.tables")
+        println("Discovered ${tables.size} tables: ${tables.joinToString { it::class.jvmName }}")
+
+        // Ensure output dir exists
+        val outDir = File("src/main/resources/migrations")
+        if (!outDir.exists()) outDir.mkdirs()
+
+        // 4) Generate ONLY the delta vs baseline
+        transaction(db) {
+            MigrationUtils.generateMigrationScript(
+                tables = tables.toTypedArray(),
+                scriptDirectory = outDir.absolutePath,
+                scriptName = "V${System.currentTimeMillis()}__auto_generated.sql",
+                withLogs = true
+            )
+        }
+        println("Migration script written to ${outDir.absolutePath}")
     }
 }

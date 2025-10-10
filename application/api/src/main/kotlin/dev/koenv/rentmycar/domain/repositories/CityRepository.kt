@@ -1,10 +1,6 @@
 package dev.koenv.rentmycar.domain.repositories
 
 import dev.koenv.rentmycar.domain.model.City
+import java.util.UUID
 
-interface CityRepository {
-    suspend fun create(city: City): Int
-    suspend fun findById(id: Int): City?
-    suspend fun update(id: Int, city: City): Boolean
-    suspend fun delete(id: Int): Boolean
-}
+interface CityRepository : Repository<City, UUID> {}

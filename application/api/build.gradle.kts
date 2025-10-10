@@ -1,8 +1,10 @@
+val ktor_version: String by project
 val exposed_version: String by project
+val mysql_version: String by project
+val sqlite_version: String by project
 val h2_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
-val mysql_version: String by project
 val prometheus_version: String by project
 val hikari_version: String by project
 val flyway_version: String by project
@@ -18,6 +20,13 @@ version = "0.0.1"
 
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
+}
+
+tasks.register<JavaExec>("generateMigrations") {
+    group = "database"
+    description = "Auto-discovers Exposed tables and generates migration SQL scripts"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("dev.koenv.rentmycar.storage.db.MigrationGenerator")
 }
 
 repositories {
@@ -61,8 +70,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-migration-jdbc:${exposed_version}")
 
     // --- Database Drivers ---
-    implementation("com.h2database:h2:$h2_version")              // Local dev/testing
-    implementation("mysql:mysql-connector-j:$mysql_version") // Production/MySQL
+    implementation("mysql:mysql-connector-java:$mysql_version")
+    implementation("org.xerial:sqlite-jdbc:$sqlite_version")
+    implementation("com.h2database:h2:$h2_version")
 
     // --- Connection Pool ---
     implementation("com.zaxxer:HikariCP:$hikari_version")

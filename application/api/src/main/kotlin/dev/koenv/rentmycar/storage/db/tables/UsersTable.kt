@@ -1,6 +1,6 @@
 package dev.koenv.rentmycar.storage.db.tables
 
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.Table
 
 object UsersTable : Table("users") {
     val id = uuid("id").autoGenerate() // UUID primary key

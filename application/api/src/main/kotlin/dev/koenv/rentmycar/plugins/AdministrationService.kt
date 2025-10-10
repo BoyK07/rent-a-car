@@ -1,4 +1,4 @@
-package dev.koenv.rentmycar.domain.services
+package dev.koenv.rentmycar.plugins
 
 import io.github.flaxoos.ktor.server.plugins.ratelimiter.*
 import io.github.flaxoos.ktor.server.plugins.ratelimiter.implementations.*

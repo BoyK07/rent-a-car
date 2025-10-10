@@ -1,32 +1,53 @@
 package dev.koenv.rentmycar.storage.db
 
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
-import dev.koenv.rentmycar.config.mySqlConfig
-import io.ktor.server.application.*
-import org.jetbrains.exposed.sql.Database
+import org.flywaydb.core.Flyway
+import io.ktor.server.config.ApplicationConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object DatabaseFactory {
+    fun init(config: ApplicationConfig) {
+        val dbConfig = config.config("db")
+        val type = dbConfig.property("type").getString().lowercase()
 
-    private fun createHikari(app: Application): HikariDataSource {
-        val mysql = app.mySqlConfig()
-        val hc = HikariConfig().apply {
-            jdbcUrl = mysql.url
-            username = mysql.user
-            password = mysql.password
-            driverClassName = if (mysql.embedded) "org.h2.Driver" else "com.mysql.cj.jdbc.Driver"
-            maximumPoolSize = app.environment.config.propertyOrNull("mysql.pool.maxPoolSize")?.getString()?.toInt() ?: 8
-            minimumIdle = app.environment.config.propertyOrNull("mysql.pool.minIdle")?.getString()?.toInt() ?: 0
-            isAutoCommit = false
-            transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-            validate()
+        val (url, driver, user, password) = when (type) {
+            "mysql" -> {
+                val host = dbConfig.property("host").getString()
+                val port = dbConfig.property("port").getString()
+                val name = dbConfig.property("name").getString()
+                val user = dbConfig.property("user").getString()
+                val password = dbConfig.property("password").getString()
+                listOf(
+                    "jdbc:mysql://$host:$port/$name?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                    "com.mysql.cj.jdbc.Driver",
+                    user,
+                    password
+                )
+            }
+            "sqlite" -> {
+                val file = dbConfig.property("file").getString()
+                listOf("jdbc:sqlite:$file", "org.sqlite.JDBC", "", "")
+            }
+            else -> {
+                listOf("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;", "org.h2.Driver", "", "")
+            }
         }
-        return HikariDataSource(hc)
+
+        Database.connect(url, driver, user, password)
+
+        // Run Flyway migrations
+        Flyway.configure()
+            .dataSource(url, user, password)
+            .locations("classpath:migrations")
+            .load()
+            .migrate()
     }
 
-    fun connect(app: Application): Database {
-        val ds = createHikari(app)
-        app.log.info("Connecting DB via Hikari (${ds.jdbcUrl})")
-        return Database.connect(ds)
-    }
+    suspend fun <T> dbQuery(block: () -> T): T =
+        withContext(Dispatchers.IO) {
+            transaction { block() }
+        }
+
 }

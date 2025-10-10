@@ -2,41 +2,55 @@ package dev.koenv.rentmycar.storage.repositories
 
 import dev.koenv.rentmycar.domain.model.User
 import dev.koenv.rentmycar.domain.repositories.UserRepository
+import dev.koenv.rentmycar.storage.db.DatabaseFactory.dbQuery
 import dev.koenv.rentmycar.storage.db.tables.UsersTable
-import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.*
+import java.util.UUID
 
-class UserRepositoryImpl(private val db: Database) : UserRepository {
-
-    private suspend fun <T> dbQuery(block: () -> T): T =
-        newSuspendedTransaction(Dispatchers.IO, db) { block() }
-
-    override suspend fun create(user: User): Int = dbQuery {
-        UsersTable.insert {
-            it[name] = user.name
-            it[age] = user.age
-        }[UsersTable.id]
+class UserRepositoryImpl() : UserRepository {
+    override suspend fun findAll(): List<User> = dbQuery {
+        UsersTable.selectAll()
+            .map { toDto(it) }
     }
 
-    override suspend fun findById(id: Int): User? = dbQuery {
-        UsersTable
-            .select(UsersTable.id eq id)
-            .map { row -> User(row[UsersTable.id], row[UsersTable.name], row[UsersTable.age]) }
+    override suspend fun findById(id: UUID): User? = dbQuery {
+        UsersTable.selectAll()
+            .where(UsersTable.id eq id)
+            .mapNotNull { toDto(it) }
             .singleOrNull()
     }
 
-    override suspend fun update(id: Int, user: User): Boolean = dbQuery {
-        UsersTable.update({ UsersTable.id eq id }) {
-            it[name] = user.name
-            it[age] = user.age
-        } > 0
+    override suspend fun existsById(id: UUID): Boolean = dbQuery {
+        UsersTable.selectAll()
+            .where(UsersTable.id eq id)
+            .firstOrNull() != null
     }
 
-    override suspend fun delete(id: Int): Boolean = dbQuery {
-        UsersTable.deleteWhere(op = { UsersTable.id eq id }) > 0
+    override suspend fun create(entity: User): User = dbQuery {
+        UsersTable.insertReturning {
+            it[name] = entity.name
+            it[age] = entity.age
+        }.mapNotNull { toDto(it) }.single()
     }
+
+    override suspend fun update(id: UUID, entity: User): User = dbQuery {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun delete(id: UUID): Boolean = dbQuery {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun count(): Long = dbQuery {
+        TODO("Not yet implemented")
+    }
+
+    private fun toDto(it: ResultRow) = User(
+        id = it[UsersTable.id],
+        name = it[UsersTable.name],
+        age = it[UsersTable.age],
+    )
+
 }
