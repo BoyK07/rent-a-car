@@ -26,13 +26,18 @@ object DatabaseFactory {
                     password
                 )
             }
-            "sqlite" -> {
+
+            "h2" -> {
                 val file = dbConfig.property("file").getString()
-                listOf("jdbc:sqlite:$file", "org.sqlite.JDBC", "", "")
+                listOf(
+                    "jdbc:h2:file:$file;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE",
+                    "org.h2.Driver",
+                    "",
+                    ""
+                )
             }
-            else -> {
-                listOf("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;", "org.h2.Driver", "", "")
-            }
+
+            else -> error("Unsupported database type: $type")
         }
 
         Database.connect(url, driver, user, password)

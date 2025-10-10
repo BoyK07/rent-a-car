@@ -7,15 +7,16 @@ ktor:
   development: true
 
 jwt:
-  domain: "https://jwt-provider-domain/"
-  audience: "jwt-audience"
-  realm: "ktor sample app"
+  domain: "https://127.0.0.1:8080/"
+  audience: "rentmycar-api"
+  realm: "Access to RentMyCar API"
+  secret: "7ea529c97a5c3a28acced8bcbc5f2d8d"
 
 db:
-  type: sqlite        # mysql | sqlite | h2
+  type: h2             # mysql | h2
   host: localhost
   port: 3306
   name: rentmycar
   user: root
   password: password
-  file: ./build/db/rentmycar.db  # used for sqlite
+  file: ./build/db/rentmycar  # for h2 file-based mode

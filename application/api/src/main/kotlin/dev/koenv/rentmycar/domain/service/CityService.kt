@@ -1,7 +1,7 @@
-package dev.koenv.rentmycar.domain.services
+package dev.koenv.rentmycar.domain.service
 
-import dev.koenv.rentmycar.domain.model.City
-import dev.koenv.rentmycar.domain.repositories.CityRepository
+import dev.koenv.rentmycar.domain.entity.City
+import dev.koenv.rentmycar.domain.repository.CityRepository
 import java.util.UUID
 
 class CityService(private val repo: CityRepository) {

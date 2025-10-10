@@ -1,25 +1,29 @@
 package dev.koenv.rentmycar.api.v1.users
 
-import dev.koenv.rentmycar.domain.model.User
-import dev.koenv.rentmycar.domain.services.UserService
-import dev.koenv.rentmycar.shared.util.requireBodyOrFail
+import dev.koenv.rentmycar.domain.entity.Role
+import dev.koenv.rentmycar.domain.entity.User
+import dev.koenv.rentmycar.domain.service.UserService
+import dev.koenv.rentmycar.dto.toResponse
+import dev.koenv.rentmycar.shared.util.requireRole
 import dev.koenv.rentmycar.shared.util.requireUuidParamOrFail
-import dev.koenv.rentmycar.storage.repositories.UserRepositoryImpl
+import dev.koenv.rentmycar.storage.repository.UserRepositoryImpl
 import io.ktor.http.*
+import io.ktor.server.auth.authenticate
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.util.UUID
 
 fun Route.userRoutes() {
     val service = UserService(UserRepositoryImpl())
 
     route("/users") {
-        get {
-            val users = service.getAll()
-            call.respond(users)
+        authenticate("auth-jwt") {
+            get {
+                call.requireRole(Role.USER)
+                val users = service.getAll()
+                call.respond(users.map { it.toResponse() })
+            }
         }
-
         post {
             val user = call.receive<User>()
             val registeredUser = service.register(user)

@@ -1,4 +1,4 @@
-package dev.koenv.rentmycar.domain.repositories
+package dev.koenv.rentmycar.domain.repository
 
 interface Repository<T, ID> : ReadRepository<T, ID>, WriteRepository<T, ID>, CountingRepository
 

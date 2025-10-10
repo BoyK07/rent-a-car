@@ -1,15 +1,8 @@
-package dev.koenv.rentmycar.storage.repositories
+package dev.koenv.rentmycar.storage.repository
 
-import dev.koenv.rentmycar.domain.model.City
-import dev.koenv.rentmycar.domain.repositories.CityRepository
+import dev.koenv.rentmycar.domain.entity.City
+import dev.koenv.rentmycar.domain.repository.CityRepository
 import dev.koenv.rentmycar.storage.db.DatabaseFactory.dbQuery
-import dev.koenv.rentmycar.storage.db.tables.CitiesTable
-import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.update
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 import java.util.UUID
 
 class CityRepositoryImpl() : CityRepository {

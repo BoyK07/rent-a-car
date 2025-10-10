@@ -3,6 +3,7 @@ val exposed_version: String by project
 val mysql_version: String by project
 val sqlite_version: String by project
 val h2_version: String by project
+val argon2_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
 val prometheus_version: String by project
@@ -47,12 +48,15 @@ dependencies {
     implementation("io.ktor:ktor-server-call-id")
     implementation("io.ktor:ktor-server-status-pages")
     implementation("io.ktor:ktor-server-request-validation")
-    implementation("io.ktor:ktor-server-auth")
-    implementation("io.ktor:ktor-server-auth-jwt")
     implementation("io.ktor:ktor-server-resources")
     implementation("io.ktor:ktor-server-metrics-micrometer")
     implementation("io.ktor:ktor-server-config-yaml")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
+
+    // --- Authentication ---
+    implementation("io.ktor:ktor-server-auth")
+    implementation("io.ktor:ktor-server-auth-jwt")
+    implementation("de.mkammerer:argon2-jvm:${argon2_version}")
 
     // --- Metrics & Monitoring ---
     implementation("io.micrometer:micrometer-registry-prometheus:$prometheus_version")
@@ -71,7 +75,6 @@ dependencies {
 
     // --- Database Drivers ---
     implementation("mysql:mysql-connector-java:$mysql_version")
-    implementation("org.xerial:sqlite-jdbc:$sqlite_version")
     implementation("com.h2database:h2:$h2_version")
 
     // --- Connection Pool ---

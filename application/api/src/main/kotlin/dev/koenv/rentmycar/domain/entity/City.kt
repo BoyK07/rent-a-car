@@ -1,4 +1,4 @@
-package dev.koenv.rentmycar.domain.model
+package dev.koenv.rentmycar.domain.entity
 
 import dev.koenv.rentmycar.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
