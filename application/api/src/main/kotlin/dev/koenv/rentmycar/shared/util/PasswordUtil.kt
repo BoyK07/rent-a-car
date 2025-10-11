@@ -3,9 +3,9 @@ package dev.koenv.rentmycar.shared.util
 import de.mkammerer.argon2.Argon2Factory
 
 object PasswordUtil {
-    private const val ITERATIONS = 3
-    private const val MEMORY_KB = 65536 // 64 MB
-    private const val PARALLELISM = 1
+    private const val ITERATIONS = 6
+    private const val MEMORY_KB = 262144 // 256 MB
+    private const val PARALLELISM = 2
 
     private fun newArgon2() =
         Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id)
