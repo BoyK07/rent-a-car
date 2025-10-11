@@ -2,7 +2,7 @@ package dev.koenv.rentmycar.storage.repository
 
 import dev.koenv.rentmycar.domain.entity.User
 import dev.koenv.rentmycar.domain.repository.UserRepository
-import dev.koenv.rentmycar.storage.db.DatabaseFactory.dbQuery
+import dev.koenv.rentmycar.plugins.dbQuery
 import dev.koenv.rentmycar.storage.db.tables.UsersTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq

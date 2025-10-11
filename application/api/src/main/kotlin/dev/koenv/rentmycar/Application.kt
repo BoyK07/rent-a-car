@@ -1,6 +1,5 @@
 package dev.koenv.rentmycar
 
-import dev.koenv.rentmycar.plugins.configureAdministration
 import dev.koenv.rentmycar.plugins.*
 import io.ktor.server.application.*
 import io.ktor.server.netty.EngineMain
