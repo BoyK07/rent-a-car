@@ -1,5 +1,6 @@
 package dev.koenv.rentmycar.routes
 
+
 import io.ktor.server.routing.*
 
 sealed interface RouteNode
@@ -16,12 +17,12 @@ data class RouteGroup(
 fun registerAllRoutes(root: Route) {
     val tree: List<RouteNode> = listOf(
         RouteGroup("/", listOf(
-            dev.koenv.rentmycar.routes.root.RootRoutes
+            dev.koenv.rentmycar.routes.root.RootRoutes,
         )),
         RouteGroup("/api", listOf(
             RouteGroup("/v1", listOf(
-                dev.koenv.rentmycar.routes.v1.auth.AuthRoutes,
-                dev.koenv.rentmycar.routes.v1.users.UserRoutes
+                dev.koenv.rentmycar.routes.api.v1.auth.AuthRoutes,
+                dev.koenv.rentmycar.routes.api.v1.users.UserRoutes,
             ))
         ))
     )

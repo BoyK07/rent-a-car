@@ -1,4 +1,4 @@
-package dev.koenv.rentmycar.routes.v1.auth
+package dev.koenv.rentmycar.routes.api.v1.auth
 
 import dev.koenv.rentmycar.domain.service.AuthService
 import dev.koenv.rentmycar.dto.auth.LoginRequestDto

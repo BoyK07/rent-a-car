@@ -1,4 +1,4 @@
-package dev.koenv.rentmycar.routes.v1.users
+package dev.koenv.rentmycar.routes.api.v1.users
 
 import dev.koenv.rentmycar.domain.entity.Role
 import dev.koenv.rentmycar.domain.service.UserService
