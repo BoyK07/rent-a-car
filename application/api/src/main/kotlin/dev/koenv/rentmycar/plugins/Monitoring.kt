@@ -8,26 +8,23 @@ import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.micrometer.prometheus.*
+import java.util.UUID
 
 fun Application.configureMonitoring() {
     val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
-    install(MicrometerMetrics) {
-        registry = appMicrometerRegistry
-        // ...
-    }
+    install(MicrometerMetrics) { registry = appMicrometerRegistry }
+
     install(CallId) {
         header(HttpHeaders.XRequestId)
-        verify { callId: String ->
-            callId.isNotEmpty()
-        }
+        generate { UUID.randomUUID().toString() }
+        replyToHeader(HttpHeaders.XRequestId)
+        verify { it.length in 8..128 }
     }
-    install(CallLogging) {
-        callIdMdc("call-id")
-    }
+
+    install(CallLogging) { callIdMdc("call-id") }
+
     routing {
-        get("/metrics-micrometer") {
-            call.respond(appMicrometerRegistry.scrape())
-        }
+        get("/metrics-micrometer") { call.respond(appMicrometerRegistry.scrape()) }
     }
 }

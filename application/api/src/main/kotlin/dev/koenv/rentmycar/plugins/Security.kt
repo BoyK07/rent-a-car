@@ -2,9 +2,13 @@ package dev.koenv.rentmycar.plugins
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import dev.koenv.rentmycar.shared.http.ErrorResponse
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.plugins.callid.*
+import io.ktor.server.response.*
 
 fun Application.configureSecurity() {
     val config = environment.config
@@ -23,12 +27,14 @@ fun Application.configureSecurity() {
                     .withIssuer(jwtDomain)
                     .build()
             )
-            validate { credential ->
-                val userId = credential.payload.getClaim("userId").asString()
-                val role = credential.payload.getClaim("role").asString()
-                if (userId != null && role != null) {
-                    JWTPrincipal(credential.payload)
-                } else null
+            validate { cred ->
+                val userId = cred.payload.getClaim("userId").asString()
+                val role = cred.payload.getClaim("role").asString()
+                if (userId != null && role != null) JWTPrincipal(cred.payload) else null
+            }
+            // Force uniform 401 body
+            challenge { _, _ ->
+                call.respond(HttpStatusCode.Unauthorized)
             }
         }
     }
