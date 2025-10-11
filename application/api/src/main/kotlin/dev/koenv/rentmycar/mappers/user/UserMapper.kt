@@ -5,7 +5,7 @@ import dev.koenv.rentmycar.dto.user.UserDto
 import java.util.*
 
 fun User.toDto(): UserDto = UserDto(
-    id = id ?: UUID(0, 0),
+    id = id ?: throw IllegalStateException("User ID is null"),
     email = email,
     role = role
 )
