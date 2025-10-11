@@ -12,7 +12,8 @@ object JwtUtil {
         audience: String,
         issuer: String,
         secret: String,
-        expiresInSeconds: Long = 3600
+        // expiresInSeconds: Long = 3600 // 1 hour
+        expiresInSeconds: Long = 2592000 // 1 month
     ): String {
         val now = System.currentTimeMillis()
         return JWT.create()

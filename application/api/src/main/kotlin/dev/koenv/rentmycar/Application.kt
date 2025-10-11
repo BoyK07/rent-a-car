@@ -11,6 +11,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     configureHTTP()
     configureSerialization()
+    configureDI()
     configureDatabase()
     configureMonitoring()
     configureAdministration()

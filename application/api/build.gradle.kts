@@ -9,6 +9,7 @@ val logback_version: String by project
 val prometheus_version: String by project
 val hikari_version: String by project
 val flyway_version: String by project
+val koin_version: String by project
 
 plugins {
     kotlin("jvm") version "2.2.20"
@@ -75,7 +76,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:${exposed_version}")
 
     // --- Database Drivers ---
-    implementation("mysql:mysql-connector-java:$mysql_version")
+    implementation("com.mysql:mysql-connector-j:$mysql_version")
     implementation("com.h2database:h2:$h2_version")
 
     // --- Connection Pool ---
@@ -85,10 +86,16 @@ dependencies {
     implementation("org.flywaydb:flyway-core:$flyway_version")
     implementation("org.flywaydb:flyway-mysql:$flyway_version")
 
+    // -- Dependency Injection ---
+    implementation("io.insert-koin:koin-ktor:$koin_version")
+
     // --- Logging ---
     implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("io.insert-koin:koin-logger-slf4j:$koin_version")
 
     // --- Testing ---
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    testImplementation("io.insert-koin:koin-test-junit5:$koin_version")
+
 }

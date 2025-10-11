@@ -4,6 +4,8 @@
     <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}" />
     <!-- Rolling retention (days) -->
     <property name="ROLLING_HISTORY" value="${LOG_HISTORY_DAYS:-30}" />
+    <!-- Koin DI log level via env -->
+    <property name="KOIN_LOG_LEVEL" value="${KOIN_LOG_LEVEL:-INFO}" />
 
     <!-- ===== Console (human-readable) ===== -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -52,5 +54,8 @@
     <logger name="org.eclipse.jetty" level="WARN"/>
     <logger name="org.flywaydb" level="INFO"/>
     <logger name="org.jetbrains.exposed" level="INFO"/>
+
+    <!-- Koin DI logs -->
+    <logger name="org.koin" level="${KOIN_LOG_LEVEL}"/>
 
 </configuration>
