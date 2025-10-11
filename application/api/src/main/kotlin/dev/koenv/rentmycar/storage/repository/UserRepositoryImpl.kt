@@ -10,49 +10,44 @@ import org.jetbrains.exposed.v1.jdbc.*
 import java.util.UUID
 
 class UserRepositoryImpl : UserRepository {
+
     override suspend fun findAll(): List<User> = dbQuery {
-        UsersTable.selectAll().map(::toDto)
+        UsersTable.selectAll().map(::toEntity)
     }
 
     override suspend fun findById(id: UUID): User? = dbQuery {
         UsersTable.selectAll()
             .where { UsersTable.id eq id }
-            .mapNotNull(::toDto)
+            .mapNotNull(::toEntity)
             .singleOrNull()
     }
 
     override suspend fun existsById(id: UUID): Boolean = dbQuery {
-        UsersTable.select(UsersTable.id)
-            .where { UsersTable.id eq id }
-            .empty()
-            .not()
+        !UsersTable.select(UsersTable.id).where { UsersTable.id eq id }.empty()
     }
 
     override suspend fun findByEmail(email: String): User? = dbQuery {
         UsersTable.selectAll()
             .where { UsersTable.email eq email }
-            .mapNotNull(::toDto)
+            .mapNotNull(::toEntity)
             .singleOrNull()
     }
 
     override suspend fun create(entity: User): User = dbQuery {
-        val id = UsersTable.insert {
-            it[name] = entity.name
-            it[age] = entity.age
+        val insertedId = UsersTable.insert {
             it[email] = entity.email
             it[passwordHash] = entity.passwordHash
             it[role] = entity.role
-        }
+        } get UsersTable.id
+
         UsersTable.selectAll()
-            .where { UsersTable.id eq id[UsersTable.id] }
-            .map(::toDto)
+            .where { UsersTable.id eq insertedId }
+            .map(::toEntity)
             .single()
     }
 
     override suspend fun update(id: UUID, entity: User): User? = dbQuery {
         val updated = UsersTable.update({ UsersTable.id eq id }) {
-            it[name] = entity.name
-            it[age] = entity.age
             it[email] = entity.email
             it[passwordHash] = entity.passwordHash
             it[role] = entity.role
@@ -60,7 +55,7 @@ class UserRepositoryImpl : UserRepository {
         if (updated > 0) {
             UsersTable.selectAll()
                 .where { UsersTable.id eq id }
-                .map(::toDto)
+                .map(::toEntity)
                 .singleOrNull()
         } else null
     }
@@ -73,12 +68,11 @@ class UserRepositoryImpl : UserRepository {
         UsersTable.selectAll().count()
     }
 
-    private fun toDto(row: ResultRow): User = User(
+    private fun toEntity(row: ResultRow): User = User(
         id = row[UsersTable.id],
-        name = row[UsersTable.name],
-        age = row[UsersTable.age],
         email = row[UsersTable.email],
         passwordHash = row[UsersTable.passwordHash],
-        role = row[UsersTable.role]
+        role = row[UsersTable.role],
+        createdAt = row[UsersTable.createdAt]
     )
 }

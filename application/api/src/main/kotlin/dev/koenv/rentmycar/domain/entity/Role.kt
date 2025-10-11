@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class Role {
-    USER,
-    ADMIN
+    ADMIN,
+    DRIVER,
+    SUPPORT // placeholder for possible future system role
 }

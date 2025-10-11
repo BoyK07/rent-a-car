@@ -72,6 +72,7 @@ dependencies {
     // --- Database: Exposed ORM Migration support ---
     implementation("org.jetbrains.exposed:exposed-migration-core:${exposed_version}")
     implementation("org.jetbrains.exposed:exposed-migration-jdbc:${exposed_version}")
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:${exposed_version}")
 
     // --- Database Drivers ---
     implementation("mysql:mysql-connector-java:$mysql_version")

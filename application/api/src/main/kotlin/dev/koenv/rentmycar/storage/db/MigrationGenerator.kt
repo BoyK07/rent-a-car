@@ -36,6 +36,12 @@ object MigrationGenerator {
         return tables
     }
 
+    private fun randomName(): String {
+        val adjectives = listOf("sleepy", "premium", "angry", "cosmic", "brave", "fuzzy", "silent", "vivid", "ancient", "spicy")
+        val nouns = listOf("otter", "mister", "falcon", "cactus", "nebula", "fear", "pizza", "vortex", "wizard", "crab")
+        return "${adjectives.random()}_${nouns.random()}"
+    }
+
     @JvmStatic
     fun main(args: Array<String>) {
         // Scratch DB: H2 in-memory, MySQL compatibility
@@ -62,15 +68,21 @@ object MigrationGenerator {
         val outDir = File("src/main/resources/migrations")
         if (!outDir.exists()) outDir.mkdirs()
 
+        // Unique script name: V<timestamp>__<random>.sql
+        val randomPart = randomName()
+        val timestamp = System.currentTimeMillis()
+        val scriptName = "V${timestamp}__${randomPart}"
+
         // 4) Generate ONLY the delta vs baseline
         transaction(db) {
             MigrationUtils.generateMigrationScript(
                 tables = tables.toTypedArray(),
                 scriptDirectory = outDir.absolutePath,
-                scriptName = "V${System.currentTimeMillis()}__auto_generated.sql",
+                scriptName = scriptName,
                 withLogs = true
             )
         }
-        println("Migration script written to ${outDir.absolutePath}")
+        println("Migration script written as $scriptName")
+
     }
 }
