@@ -30,7 +30,9 @@ object MigrationGenerator {
                         if (kClass.isSubclassOf(Table::class)) {
                             kClass.objectInstance?.let { tables += it as Table }
                         }
-                    } catch (_: Throwable) {}
+                    } catch (t: Throwable) {
+                        println("Failed to load class $className: ${t.message}")
+                    }
                 }
         }
         return tables
