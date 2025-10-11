@@ -4,19 +4,20 @@ ktor:
       - dev.koenv.rentmycar.ApplicationKt.module
   deployment:
     port: 8080
-  development: true
+  development: $KTOR_DEVELOPMENT:true
+  environment: $KTOR_ENV:development
 
 jwt:
   domain: "https://127.0.0.1:8080/"
   audience: "rentmycar-api"
   realm: "Access to RentMyCar API"
-  secret: "7ea529c97a5c3a28acced8bcbc5f2d8d"
+  secret: "$JWT_SECRET:7ea529c97a5c3a28acced8bcbc5f2d8d"
 
 db:
-  type: h2             # mysql | h2
-  host: localhost
-  port: 3306
-  name: rentmycar
-  user: root
-  password: password
-  file: ./build/db/rentmycar  # for h2 file-based mode
+  type: "$DB_TYPE:h2"             # mysql | h2
+  host: "$DB_HOST:localhost"
+  port: "$DB_PORT:3306"
+  name: "$DB_NAME:rentmycar"
+  user: "$DB_USER:root"
+  password: "$DB_PASSWORD:password"
+  file: "$DB_FILE:./build/db/rentmycar"  # for h2 file-based mode
