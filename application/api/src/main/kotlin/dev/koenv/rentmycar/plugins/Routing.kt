@@ -1,7 +1,6 @@
 package dev.koenv.rentmycar.plugins
 
 import dev.koenv.rentmycar.api.v1.auth.authRoutes
-import dev.koenv.rentmycar.api.v1.cities.cityRoutes
 import dev.koenv.rentmycar.api.v1.users.userRoutes
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -27,7 +26,6 @@ fun Application.configureRouting() {
 
         route("/api/v1") {
             authRoutes()
-            cityRoutes()
             userRoutes()
         }
     }
