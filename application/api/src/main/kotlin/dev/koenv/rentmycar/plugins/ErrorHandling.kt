@@ -51,7 +51,7 @@ fun Application.configureErrorHandling() {
                 status = s.value,
                 traceId = call.callId
             )
-            val payload = json.encodeToString(body)
+            val payload = json.encodeToString(ErrorResponse.serializer(), body)
             log.debug("Wrapping ${s.value} for uri=${call.request.uri} trace=${call.callId}")
             call.response.status(s)
             // Force JSON regardless of Accept header to avoid 406
