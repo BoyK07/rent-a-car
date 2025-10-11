@@ -1,7 +1,6 @@
 package dev.koenv.rentmycar.plugins
 
-import dev.koenv.rentmycar.api.v1.auth.authRoutes
-import dev.koenv.rentmycar.api.v1.users.userRoutes
+import dev.koenv.rentmycar.routes.registerAllRoutes
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.statuspages.*
@@ -24,10 +23,7 @@ fun Application.configureRouting() {
     routing {
         get("/") { call.respondText("OK") }
 
-        route("/api/v1") {
-            authRoutes()
-            userRoutes()
-        }
+        // Delegate route registration
+        registerAllRoutes(this)
     }
 }
-
