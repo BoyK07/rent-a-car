@@ -25,7 +25,8 @@
         </rollingPolicy>
         <encoder>
             <!-- plain text, one line per event -->
-            <pattern>%d{ISO8601} %-5level [%thread] [%X{call-id:-—}] %logger{36} - %replace(%msg){'\r|\n',' '}%n%ex</pattern>
+            <pattern>%d{ISO8601} %-5level [%thread] [%X{call-id:-—}] %logger{36} - %replace(%msg){'\r|\n',' '}{}
+                %n%xEx{full}</pattern>
         </encoder>
     </appender>
 

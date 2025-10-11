@@ -10,20 +10,22 @@ import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
-import io.ktor.util.pipeline.*
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 fun Application.configureErrorHandling() {
+    val log = environment.log
     val json = Json { encodeDefaults = true }
 
     install(StatusPages) {
         exception<ApiException> { call, e ->
+            log.warn("ApiException ${e.http.value} ${e.code} uri=${call.request.uri} trace=${call.callId}: ${e.message}")
             call.respond(e.http, e.toErrorResponse(call))
         }
         exception<RequestAborted> { call, _ ->
+            log.debug("RequestAborted uri=${call.request.uri} trace=${call.callId}")
         }
         exception<Throwable> { call, e ->
+            log.error("Unhandled 500 uri=${call.request.uri} trace=${call.callId}", e)
             call.respond(
                 HttpStatusCode.InternalServerError,
                 ErrorResponse(
@@ -50,6 +52,7 @@ fun Application.configureErrorHandling() {
                 traceId = call.callId
             )
             val payload = json.encodeToString(body)
+            log.debug("Wrapping ${s.value} for uri=${call.request.uri} trace=${call.callId}")
             call.response.status(s)
             // Force JSON regardless of Accept header to avoid 406
             proceedWith(TextContent(payload, ContentType.Application.Json, s))

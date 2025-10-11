@@ -1,11 +1,12 @@
-// ApiException.kt
 package dev.koenv.rentmycar.shared.http
 
 import io.ktor.http.*
 
-open class ApiException(
+class ApiException(
     val http: HttpStatusCode,
-    val code: String,
+    code: String? = null,
     override val message: String,
-    val details: Map<String, String>? = null
-) : RuntimeException(message)
+    val details: Any? = null
+) : RuntimeException(message) {
+    val code: String = code ?: http.description.uppercase().replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+}

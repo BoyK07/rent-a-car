@@ -1,6 +1,7 @@
 package dev.koenv.rentmycar.shared.util
 
 import dev.koenv.rentmycar.domain.entity.Role
+import dev.koenv.rentmycar.shared.http.ApiException
 import io.ktor.http.*
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
@@ -13,11 +14,14 @@ class RequestAborted : RuntimeException()
 
 fun JWTPrincipal.requireRole(vararg allowed: Role) {
     val role = this.payload.getClaim("role").asString()?.let { Role.valueOf(it) }
-    if (role == null || role !in allowed) throw IllegalAccessException("Insufficient role")
+    if (role == null || role !in allowed) throw ApiException(HttpStatusCode.Forbidden, message = "Insufficient role")
 }
 
 fun ApplicationCall.requireRole(vararg allowed: Role): JWTPrincipal {
-    val principal = this.principal<JWTPrincipal>() ?: throw IllegalAccessException("No principal")
+    val principal = this.principal<JWTPrincipal>() ?: throw ApiException(
+        HttpStatusCode.InternalServerError,
+        message = "No principal"
+    )
     principal.requireRole(*allowed)
     return principal
 }
