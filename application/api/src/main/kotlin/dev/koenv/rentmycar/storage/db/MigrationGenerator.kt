@@ -2,19 +2,22 @@
 
 package dev.koenv.rentmycar.storage.db
 
+import ch.vorburger.mariadb4j.DB
+import ch.vorburger.mariadb4j.DBConfigurationBuilder
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
-import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.jvm.jvmName
 import java.io.File
+import kotlin.io.path.createTempDirectory
+import kotlin.reflect.full.isSubclassOf
 
 object MigrationGenerator {
-    private fun discoverTables(packageName: String): List<Table> {
-        val tables = mutableListOf<Table>()
-        val pkgPath = packageName.replace('.', '/')
+
+    private fun discoverTables(pkg: String): List<Table> {
+        val out = mutableListOf<Table>()
+        val pkgPath = pkg.replace('.', '/')
         val cl = Thread.currentThread().contextClassLoader
         val resources = cl.getResources(pkgPath)
         while (resources.hasMoreElements()) {
@@ -24,18 +27,18 @@ object MigrationGenerator {
             dir.walkTopDown()
                 .filter { it.extension == "class" }
                 .forEach { f ->
-                    val className = "$packageName.${f.nameWithoutExtension}"
+                    val className = "$pkg.${f.nameWithoutExtension}"
                     try {
                         val kClass = Class.forName(className).kotlin
                         if (kClass.isSubclassOf(Table::class)) {
-                            kClass.objectInstance?.let { tables += it as Table }
+                            kClass.objectInstance?.let { out += it as Table }
                         }
-                    } catch (t: Throwable) {
-                        println("Failed to load class $className: ${t.message}")
+                    } catch (_: Exception) {
+                        // ignore classes that can't be loaded/reflected
                     }
                 }
         }
-        return tables
+        return out
     }
 
     private fun randomName(): String {
@@ -46,45 +49,77 @@ object MigrationGenerator {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        // Scratch DB: H2 in-memory, MySQL compatibility
-        val url = "jdbc:h2:mem:migrations;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;"
-        val driver = "org.h2.Driver"
-        val user = ""
-        val pass = ""
+        val tmpRoot = createTempDirectory("mariadb4j-migrations").toFile()
+        val baseDir = File(tmpRoot, "base")
+        val dataDir = File(tmpRoot, "data")
 
-        // 1) Recreate current baseline by applying existing SQL migrations into the scratch DB
-        Flyway.configure()
-            .dataSource(url, user, pass)
-            .locations("classpath:migrations") // your existing files
-            .load()
-            .migrate()
+        val config = DBConfigurationBuilder.newBuilder()
+            .setPort(0)
+            .setBaseDir(baseDir)
+            .setDataDir(dataDir)
+            .setDeletingTemporaryBaseAndDataDirsOnShutdown(true)
+            .build()
 
-        // 2) Connect Exposed to that scratch DB
-        val db = Database.connect(url, driver, user, pass)
+        val dbServer: DB = DB.newEmbeddedDB(config)
+        try {
+            dbServer.start()
+            val port = config.port
 
-        // 3) Discover tables from code
-        val tables = discoverTables("dev.koenv.rentmycar.storage.db.tables")
-        println("Discovered ${tables.size} tables: ${tables.joinToString { it::class.jvmName }}")
+            val dbName = "libraryapi"
+            val url = "jdbc:mariadb://localhost:$port/$dbName?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            val driver = "org.mariadb.jdbc.Driver"
+            val user = "root"
+            val pass = ""
 
-        // Ensure output dir exists
-        val outDir = File("src/main/resources/migrations")
-        if (!outDir.exists()) outDir.mkdirs()
+            dbServer.run("CREATE DATABASE IF NOT EXISTS $dbName;")
 
-        // Unique script name: V<timestamp>__<random>.sql
-        val randomPart = randomName()
-        val timestamp = System.currentTimeMillis()
-        val scriptName = "V${timestamp}__${randomPart}"
+            // Run Flyway migrations present in resources
+            Flyway.configure()
+                .dataSource(url, user, pass)
+                .locations("classpath:migrations")
+                .load()
+                .migrate()
 
-        // 4) Generate ONLY the delta vs baseline
-        transaction(db) {
-            MigrationUtils.generateMigrationScript(
-                tables = tables.toTypedArray(),
-                scriptDirectory = outDir.absolutePath,
-                scriptName = scriptName,
-                withLogs = true
-            )
+            val db = Database.connect(url, driver, user, pass)
+
+            val tables = discoverTables("${this.javaClass.packageName}.tables")
+            println("Discovered ${tables.size} tables")
+
+            val requiredStatements = transaction(db) {
+                MigrationUtils.statementsRequiredForDatabaseMigration(*tables.toTypedArray(), withLogs = true)
+            }
+
+            // Apply required statements so subsequent drop detection sees added columns/indices
+            if (requiredStatements.isNotEmpty()) {
+                transaction(db) {
+                    requiredStatements.forEach { sql -> exec(sql) }
+                }
+            }
+
+            val dropStatements = transaction(db) {
+                buildList {
+                    addAll(MigrationUtils.dropUnmappedColumnsStatements(*tables.toTypedArray(), withLogs = true))
+                    addAll(MigrationUtils.dropUnmappedIndices(*tables.toTypedArray(), withLogs = true))
+                    addAll(MigrationUtils.dropUnmappedSequences(*tables.toTypedArray(), withLogs = true))
+                }
+            }
+
+            val allStatements = buildList {
+                addAll(requiredStatements)
+                addAll(dropStatements)
+            }
+
+            val outDir = File("src/main/resources/migrations").apply { mkdirs() }
+            if (allStatements.isNotEmpty()) {
+                val scriptName = "V${System.currentTimeMillis()}__${randomName()}.sql"
+                File(outDir, scriptName).writeText(allStatements.joinToString(";\n", postfix = ";"))
+                println("Migration script written: ${scriptName}")
+            } else {
+                println("No schema changes detected.")
+            }
+        } finally {
+            try { dbServer.stop() } catch (_: Exception) {}
+            try { tmpRoot.deleteRecursively() } catch (_: Exception) {}
         }
-        println("Migration script written as $scriptName")
-
     }
 }

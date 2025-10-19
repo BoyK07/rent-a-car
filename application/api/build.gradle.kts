@@ -1,8 +1,6 @@
 val ktor_version: String by project
 val exposed_version: String by project
-val mysql_version: String by project
-val sqlite_version: String by project
-val h2_version: String by project
+val mariadb_version: String by project
 val argon2_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
@@ -76,8 +74,8 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:${exposed_version}")
 
     // --- Database Drivers ---
-    implementation("com.mysql:mysql-connector-j:$mysql_version")
-    implementation("com.h2database:h2:$h2_version")
+    implementation("ch.vorburger.mariaDB4j:mariaDB4j:${mariadb_version}")
+    implementation("org.mariadb.jdbc:mariadb-java-client:${mariadb_version}")
 
     // --- Connection Pool ---
     implementation("com.zaxxer:HikariCP:$hikari_version")

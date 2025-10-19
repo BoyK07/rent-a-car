@@ -1,4 +1,0 @@
-ALTER TABLE users ADD email VARCHAR(255) NOT NULL;
-ALTER TABLE users ADD password_hash VARCHAR(255) NOT NULL;
-ALTER TABLE users ADD "role" VARCHAR(20) NOT NULL;
-ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
