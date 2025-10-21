@@ -1,15 +1,12 @@
 package dev.koenv.rentmycar.storage.repository
 
 import dev.koenv.rentmycar.domain.entity.Car
-import dev.koenv.rentmycar.domain.enums.CarCategory
-import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.repository.CarRepository
 import dev.koenv.rentmycar.plugins.dbQuery
 import dev.koenv.rentmycar.storage.db.tables.CarsTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.*
-import java.math.BigDecimal
 import java.util.*
 
 class CarRepositoryImpl : CarRepository {
