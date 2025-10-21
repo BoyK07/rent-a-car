@@ -27,13 +27,13 @@ fun Application.configureDI() {
             module {
                 // provide Ktor config
                 single { environment.config }
+            },
 
-                // repositories
-                repositoryModule
+            // repositories
+            repositoryModule,
 
-                // services
-                serviceModule
-            }
+            // services
+            serviceModule
         )
     }
 }
