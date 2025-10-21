@@ -17,6 +17,6 @@ db:
   type: "$DB_TYPE:embedded"             # external | embedded
   host: "$DB_HOST:localhost"
   port: "$DB_PORT:3306"
-  name: "$DB_NAME:libraryapi"
+  name: "$DB_NAME:rentmycar"
   user: "$DB_USER:root"
   password: "$DB_PASSWORD:password"
