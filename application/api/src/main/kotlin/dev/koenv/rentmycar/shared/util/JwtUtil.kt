@@ -2,7 +2,7 @@ package dev.koenv.rentmycar.shared.util
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import dev.koenv.rentmycar.domain.entity.Role
+import dev.koenv.rentmycar.domain.enums.Role
 import java.util.*
 
 object JwtUtil {

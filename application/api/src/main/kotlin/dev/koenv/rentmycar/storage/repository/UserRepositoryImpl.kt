@@ -35,6 +35,7 @@ class UserRepositoryImpl : UserRepository {
 
     override suspend fun create(entity: User): User = dbQuery {
         val insertedId = UsersTable.insert {
+            it[name] = entity.name
             it[email] = entity.email
             it[passwordHash] = entity.passwordHash
             it[role] = entity.role
@@ -48,6 +49,7 @@ class UserRepositoryImpl : UserRepository {
 
     override suspend fun update(id: UUID, entity: User): User? = dbQuery {
         val updated = UsersTable.update({ UsersTable.id eq id }) {
+            it[name] = entity.name
             it[email] = entity.email
             it[passwordHash] = entity.passwordHash
             it[role] = entity.role
@@ -70,6 +72,7 @@ class UserRepositoryImpl : UserRepository {
 
     private fun toEntity(row: ResultRow): User = User(
         id = row[UsersTable.id],
+        name = row[UsersTable.name],
         email = row[UsersTable.email],
         passwordHash = row[UsersTable.passwordHash],
         role = row[UsersTable.role],

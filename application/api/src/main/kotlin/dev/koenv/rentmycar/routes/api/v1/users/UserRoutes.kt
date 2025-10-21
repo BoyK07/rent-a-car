@@ -1,6 +1,6 @@
 package dev.koenv.rentmycar.routes.api.v1.users
 
-import dev.koenv.rentmycar.domain.entity.Role
+import dev.koenv.rentmycar.domain.enums.Role
 import dev.koenv.rentmycar.domain.service.UserService
 import dev.koenv.rentmycar.mappers.user.toDto
 import dev.koenv.rentmycar.routes.RouteRegistrar
