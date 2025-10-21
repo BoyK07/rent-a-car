@@ -8,5 +8,5 @@ fun RegisterRequestDto.toEntity(passwordHash: String): User = User(
     name = name,
     email = email,
     passwordHash = passwordHash,
-    role = Role.DRIVER
+    role = Role.MEMBER
 )

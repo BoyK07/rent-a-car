@@ -13,6 +13,6 @@ data class User(
     val name: String,
     val email: String,
     val passwordHash: String,
-    val role: Role = Role.DRIVER,
+    val role: Role = Role.MEMBER,
     val createdAt: LocalDateTime? = null
 )
