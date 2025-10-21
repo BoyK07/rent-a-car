@@ -2,11 +2,10 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
   "name": "Rent My Car",
+
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  // "image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
 
   // Set the workspace folder. More info: https://aka.ms/vscode-remote/containers/workspaces
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
@@ -20,7 +19,17 @@
   },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [8080],
+  "forwardPorts": [8080, 3306],
+
+  // Environment variables available inside the remote development container session.
+  "remoteEnv": {
+    "DB_TYPE": "external",
+    "DB_HOST": "db",
+    "DB_PORT": "3306",
+    "DB_NAME": "app",
+    "DB_USER": "dev",
+    "DB_PASSWORD": "dev"
+  },
 
   // Use 'postCreateCommand' to run commands after the container is created.
   // "postCreateCommand": "java -version",
