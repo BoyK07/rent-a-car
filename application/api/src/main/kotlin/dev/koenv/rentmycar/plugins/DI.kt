@@ -3,6 +3,7 @@ package dev.koenv.rentmycar.plugins
 import dev.koenv.rentmycar.domain.repository.UserRepository
 import dev.koenv.rentmycar.domain.service.AuthService
 import dev.koenv.rentmycar.domain.service.UserService
+import dev.koenv.rentmycar.plugins.di.repositoryModule
 import dev.koenv.rentmycar.storage.repository.UserRepositoryImpl
 import org.koin.dsl.module
 import io.ktor.server.application.*
@@ -31,7 +32,7 @@ fun Application.configureDI() {
                 single { environment.config }
 
                 // repositories
-                single<UserRepository> { UserRepositoryImpl() }
+                repositoryModule
 
                 // services
                 single { AuthService(get(), get()) }

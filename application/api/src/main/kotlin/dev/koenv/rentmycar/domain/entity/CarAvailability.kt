@@ -1,7 +1,7 @@
 package dev.koenv.rentmycar.domain.entity
 
 import dev.koenv.rentmycar.shared.serialization.UUIDSerializer
-import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import java.util.*
 
@@ -11,6 +11,6 @@ data class CarAvailability(
     val id: UUID? = null,
     @Serializable(with = UUIDSerializer::class)
     val carId: UUID,
-    val startTime: Instant,
-    val endTime: Instant
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime
 )

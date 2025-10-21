@@ -1,7 +1,5 @@
 package dev.koenv.rentmycar.domain.repository
 
-interface Repository<T, ID> : ReadRepository<T, ID>, WriteRepository<T, ID>, CountingRepository
-
 interface ReadRepository<T, ID> {
     suspend fun findAll(): List<T>
     suspend fun findById(id: ID): T?
@@ -17,3 +15,8 @@ interface WriteRepository<T, ID> {
 interface CountingRepository {
     suspend fun count(): Long
 }
+
+interface Repository<T, ID> :
+    ReadRepository<T, ID>,
+    WriteRepository<T, ID>,
+    CountingRepository

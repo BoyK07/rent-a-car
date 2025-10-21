@@ -3,7 +3,7 @@ package dev.koenv.rentmycar.domain.entity
 import dev.koenv.rentmycar.domain.enums.ReservationStatus
 import dev.koenv.rentmycar.shared.serialization.BigDecimalSerializer
 import dev.koenv.rentmycar.shared.serialization.UUIDSerializer
-import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
 import java.util.*
@@ -16,8 +16,8 @@ data class Reservation(
     val carId: UUID,
     @Serializable(with = UUIDSerializer::class)
     val renterId: UUID,
-    val startTime: Instant,
-    val endTime: Instant,
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime,
     val status: ReservationStatus,
     @Serializable(with = BigDecimalSerializer::class)
     val priceTotal: BigDecimal,

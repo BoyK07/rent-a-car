@@ -7,7 +7,7 @@ import dev.koenv.rentmycar.storage.db.tables.UsersTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.*
-import java.util.UUID
+import java.util.*
 
 class UserRepositoryImpl : UserRepository {
 
@@ -16,10 +16,7 @@ class UserRepositoryImpl : UserRepository {
     }
 
     override suspend fun findById(id: UUID): User? = dbQuery {
-        UsersTable.selectAll()
-            .where { UsersTable.id eq id }
-            .mapNotNull(::toEntity)
-            .singleOrNull()
+        UsersTable.selectAll().where { UsersTable.id eq id }.mapNotNull(::toEntity).singleOrNull()
     }
 
     override suspend fun existsById(id: UUID): Boolean = dbQuery {
@@ -27,10 +24,7 @@ class UserRepositoryImpl : UserRepository {
     }
 
     override suspend fun findByEmail(email: String): User? = dbQuery {
-        UsersTable.selectAll()
-            .where { UsersTable.email eq email }
-            .mapNotNull(::toEntity)
-            .singleOrNull()
+        UsersTable.selectAll().where { UsersTable.email eq email }.mapNotNull(::toEntity).singleOrNull()
     }
 
     override suspend fun create(entity: User): User = dbQuery {
@@ -41,10 +35,7 @@ class UserRepositoryImpl : UserRepository {
             it[role] = entity.role
         } get UsersTable.id
 
-        UsersTable.selectAll()
-            .where { UsersTable.id eq insertedId }
-            .map(::toEntity)
-            .single()
+        UsersTable.selectAll().where { UsersTable.id eq insertedId }.map(::toEntity).single()
     }
 
     override suspend fun update(id: UUID, entity: User): User? = dbQuery {
@@ -54,23 +45,18 @@ class UserRepositoryImpl : UserRepository {
             it[passwordHash] = entity.passwordHash
             it[role] = entity.role
         }
-        if (updated > 0) {
-            UsersTable.selectAll()
-                .where { UsersTable.id eq id }
-                .map(::toEntity)
-                .singleOrNull()
-        } else null
+        if (updated > 0)
+            UsersTable.selectAll().where { UsersTable.id eq id }.map(::toEntity).singleOrNull()
+        else null
     }
 
     override suspend fun delete(id: UUID): Boolean = dbQuery {
         UsersTable.deleteWhere { UsersTable.id eq id } > 0
     }
 
-    override suspend fun count(): Long = dbQuery {
-        UsersTable.selectAll().count()
-    }
+    override suspend fun count(): Long = dbQuery { UsersTable.selectAll().count() }
 
-    private fun toEntity(row: ResultRow): User = User(
+    private fun toEntity(row: ResultRow) = User(
         id = row[UsersTable.id],
         name = row[UsersTable.name],
         email = row[UsersTable.email],
