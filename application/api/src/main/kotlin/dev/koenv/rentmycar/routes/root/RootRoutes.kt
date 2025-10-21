@@ -6,8 +6,6 @@ import io.ktor.server.routing.*
 
 object RootRoutes : RouteRegistrar {
     override fun Route.register() {
-        route("/") {
-            get("/health") { call.respondText("OK") }
-        }
+        get("/health") { call.respondText("OK") }
     }
 }

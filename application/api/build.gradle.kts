@@ -11,7 +11,7 @@ val koin_version: String by project
 
 plugins {
     kotlin("jvm") version "2.2.20"
-    id("io.ktor.plugin") version "3.2.3"
+    id("io.ktor.plugin") version "3.3.1"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
 }
 
@@ -36,25 +36,25 @@ repositories {
 dependencies {
 
     // --- Ktor Server Core ---
-    implementation("io.ktor:ktor-server-core")
-    implementation("io.ktor:ktor-server-netty")
-    implementation("io.ktor:ktor-server-host-common")
-    implementation("io.ktor:ktor-server-default-headers")
-    implementation("io.ktor:ktor-server-compression")
-    implementation("io.ktor:ktor-server-cors")
-    implementation("io.ktor:ktor-server-content-negotiation")
-    implementation("io.ktor:ktor-server-call-logging")
-    implementation("io.ktor:ktor-server-call-id")
-    implementation("io.ktor:ktor-server-status-pages")
-    implementation("io.ktor:ktor-server-request-validation")
-    implementation("io.ktor:ktor-server-resources")
+    implementation("io.ktor:ktor-server-core:${ktor_version}")
+    implementation("io.ktor:ktor-server-netty:${ktor_version}")
+    implementation("io.ktor:ktor-server-host-common:${ktor_version}")
+    implementation("io.ktor:ktor-server-default-headers:${ktor_version}")
+    implementation("io.ktor:ktor-server-compression:${ktor_version}")
+    implementation("io.ktor:ktor-server-cors:${ktor_version}")
+    implementation("io.ktor:ktor-server-content-negotiation:${ktor_version}")
+    implementation("io.ktor:ktor-server-call-logging:${ktor_version}")
+    implementation("io.ktor:ktor-server-call-id:${ktor_version}")
+    implementation("io.ktor:ktor-server-status-pages:${ktor_version}")
+    implementation("io.ktor:ktor-server-request-validation:${ktor_version}")
+    implementation("io.ktor:ktor-server-resources:${ktor_version}")
     implementation("io.ktor:ktor-server-metrics-micrometer")
-    implementation("io.ktor:ktor-server-config-yaml")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation("io.ktor:ktor-server-config-yaml:${ktor_version}")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor_version}")
 
     // --- Authentication ---
-    implementation("io.ktor:ktor-server-auth")
-    implementation("io.ktor:ktor-server-auth-jwt")
+    implementation("io.ktor:ktor-server-auth:${ktor_version}")
+    implementation("io.ktor:ktor-server-auth-jwt:${ktor_version}")
     implementation("de.mkammerer:argon2-jvm:${argon2_version}")
 
     // --- Metrics & Monitoring ---
@@ -92,7 +92,7 @@ dependencies {
     implementation("io.insert-koin:koin-logger-slf4j:$koin_version")
 
     // --- Testing ---
-    testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("io.ktor:ktor-server-test-host:${ktor_version}")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     testImplementation("io.insert-koin:koin-test-junit5:$koin_version")
 

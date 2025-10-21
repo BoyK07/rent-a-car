@@ -65,7 +65,7 @@ object MigrationGenerator {
             dbServer.start()
             val port = config.port
 
-            val dbName = "libraryapi"
+            val dbName = "rentmycar"
             val url = "jdbc:mariadb://localhost:$port/$dbName?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             val driver = "org.mariadb.jdbc.Driver"
             val user = "root"

@@ -44,7 +44,7 @@ private fun initDatabase(config: ApplicationConfig) {
 
         "embedded" -> {
             val baseDir = File("build/mariadb4j")
-            val dbName = dbConfig.propertyOrNull("name")?.getString() ?: "libraryapi"
+            val dbName = dbConfig.propertyOrNull("name")?.getString() ?: "rentmycar"
 
             val configBuilder = DBConfigurationBuilder.newBuilder()
             configBuilder.setPort(3306)
