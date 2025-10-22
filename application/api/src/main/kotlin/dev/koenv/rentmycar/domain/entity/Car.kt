@@ -14,7 +14,7 @@ data class Car(
     val id: UUID? = null,
     @Serializable(with = UUIDSerializer::class)
     val ownerId: UUID,
-    val make: String,
+    val brand: String,
     val model: String,
     val category: CarCategory,
     val fuelType: FuelType? = null,

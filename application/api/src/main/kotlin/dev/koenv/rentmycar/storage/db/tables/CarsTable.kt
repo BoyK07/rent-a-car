@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.core.Table
 object CarsTable : Table("cars") {
     val id = uuid("id").autoGenerate()
     val ownerId = uuid("owner_id").references(UsersTable.id)
-    val make = varchar("make", 100)
+    val brand = varchar("brand", 100)
     val model = varchar("model", 100)
     val category = enumerationByName("category", 10, CarCategory::class)
     val fuelType = enumerationByName("fuel_type", 10, FuelType::class).nullable()

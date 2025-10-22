@@ -7,4 +7,6 @@ enum class FuelType {
     PETROL,
     DIESEL,
     LPG,
+    ELECTRIC,
+    HYBRIDE,
 }

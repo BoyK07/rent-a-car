@@ -26,7 +26,7 @@ class CarRepositoryImpl : CarRepository {
     override suspend fun create(entity: Car): Car = dbQuery {
         val insertedId = CarsTable.insert {
             it[ownerId] = entity.ownerId
-            it[make] = entity.make
+            it[brand] = entity.brand
             it[model] = entity.model
             it[category] = entity.category
             it[fuelType] = entity.fuelType
@@ -42,7 +42,7 @@ class CarRepositoryImpl : CarRepository {
     override suspend fun update(id: UUID, entity: Car): Car? = dbQuery {
         val updated = CarsTable.update({ CarsTable.id eq id }) {
             it[ownerId] = entity.ownerId
-            it[make] = entity.make
+            it[brand] = entity.brand
             it[model] = entity.model
             it[category] = entity.category
             it[fuelType] = entity.fuelType
@@ -65,7 +65,7 @@ class CarRepositoryImpl : CarRepository {
     private fun toEntity(row: ResultRow) = Car(
         id = row[CarsTable.id],
         ownerId = row[CarsTable.ownerId],
-        make = row[CarsTable.make],
+        brand = row[CarsTable.brand],
         model = row[CarsTable.model],
         category = row[CarsTable.category],
         fuelType = row[CarsTable.fuelType],
