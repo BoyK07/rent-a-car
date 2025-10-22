@@ -1,6 +1,8 @@
 docs/*
 !docs/codex/
 !docs/codex/**
+!docs/api
+!docs/api/**
 
 .gradle
 build/

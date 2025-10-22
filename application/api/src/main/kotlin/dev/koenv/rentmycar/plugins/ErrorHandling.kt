@@ -6,10 +6,12 @@ import dev.koenv.rentmycar.shared.util.RequestAborted
 import io.ktor.http.*
 import io.ktor.http.content.TextContent
 import io.ktor.server.application.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 fun Application.configureErrorHandling() {
@@ -24,6 +26,33 @@ fun Application.configureErrorHandling() {
         exception<RequestAborted> { call, _ ->
             log.debug("RequestAborted uri=${call.request.uri} trace=${call.callId}")
         }
+
+        exception<BadRequestException> { call, _ ->
+            log.info("Handled BadRequest uri=${call.request.uri} trace=${call.callId}")
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(
+                    code = "INVALID_REQUEST_BODY",
+                    message = "Request body is missing required fields or has invalid format",
+                    status = HttpStatusCode.BadRequest.value,
+                    traceId = call.callId
+                )
+            )
+        }
+
+        exception<SerializationException> { call, e ->
+            log.warn("BadRequest SerializationException uri=${call.request.uri} trace=${call.callId}", e)
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(
+                    code = "INVALID_JSON",
+                    message = e.message ?: "Invalid JSON structure",
+                    status = HttpStatusCode.BadRequest.value,
+                    traceId = call.callId
+                )
+            )
+        }
+
         exception<Throwable> { call, e ->
             log.error("Unhandled 500 uri=${call.request.uri} trace=${call.callId}", e)
             call.respond(
@@ -36,10 +65,11 @@ fun Application.configureErrorHandling() {
                 )
             )
         }
-        // Ensure framework 404/405 pass through our wrapper
+
         status(HttpStatusCode.NotFound) { call, s -> call.respond(s) }
         status(HttpStatusCode.MethodNotAllowed) { call, s -> call.respond(s) }
     }
+
 
     // Wrap plain status sends into a JSON body and BYPASS content negotiation.
     sendPipeline.intercept(ApplicationSendPipeline.Transform) { subject ->

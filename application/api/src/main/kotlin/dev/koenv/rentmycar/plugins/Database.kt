@@ -41,13 +41,12 @@ private fun initDatabase(config: ApplicationConfig) {
                 password
             )
         }
-
         "embedded" -> {
             val baseDir = File("build/mariadb4j")
             val dbName = dbConfig.propertyOrNull("name")?.getString() ?: "rentmycar"
 
             val configBuilder = DBConfigurationBuilder.newBuilder()
-            configBuilder.setPort(3306)
+            configBuilder.setPort(3306) // consider 0 to auto-pick a free port in dev
             configBuilder.setBaseDir(baseDir)
             configBuilder.setDataDir(File(baseDir, "data"))
             configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false)
@@ -58,23 +57,37 @@ private fun initDatabase(config: ApplicationConfig) {
 
             val port = configBuilder.port
             val url = "jdbc:mariadb://localhost:$port/$dbName?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-
-            // initialize database schema
             db.createDB(dbName)
 
             listOf(url, "org.mariadb.jdbc.Driver", "root", "")
         }
-
         else -> error("Unsupported database type: $type")
     }
 
+    // Exposed connect
     Database.connect(url, driver, user, password)
 
-    Flyway.configure()
+    // Flags (env or application.conf). Only use in dev!
+    val reset = System.getenv("DB_RESET")?.equals("true", ignoreCase = true)
+        ?: config.propertyOrNull("db.reset")?.getString()?.equals("true", true)
+        ?: false
+
+    val flyway = Flyway.configure()
         .dataSource(url, user, password)
-        .locations("classpath:migrations")
+        .locations("classpath:migrations")   // keep your folder
+        .cleanDisabled(false)                // allow clean (careful: dev only)
         .load()
-        .migrate()
+
+    when {
+        reset -> {
+            // migrate:fresh
+            flyway.clean()
+            flyway.migrate()
+        }
+        else -> {
+            flyway.migrate()
+        }
+    }
 }
 
 /** Gracefully stop MariaDB4j on shutdown. */

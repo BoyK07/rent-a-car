@@ -1,6 +1,6 @@
 package dev.koenv.rentmycar.shared.util
 
-import dev.koenv.rentmycar.domain.entity.Role
+import dev.koenv.rentmycar.domain.enums.Role
 import dev.koenv.rentmycar.shared.http.ApiException
 import io.ktor.http.*
 import io.ktor.server.auth.jwt.JWTPrincipal
