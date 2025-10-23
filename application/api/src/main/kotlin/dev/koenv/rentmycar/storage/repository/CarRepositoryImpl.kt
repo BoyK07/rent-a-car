@@ -6,7 +6,11 @@ import dev.koenv.rentmycar.plugins.dbQuery
 import dev.koenv.rentmycar.storage.db.tables.CarsTable
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.like
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.*
+import java.math.BigDecimal
 import java.util.*
 
 class CarRepositoryImpl : CarRepository {
@@ -61,6 +65,66 @@ class CarRepositoryImpl : CarRepository {
     }
 
     override suspend fun count(): Long = dbQuery { CarsTable.selectAll().count() }
+
+    override suspend fun searchCars(
+        latitude: Double?,
+        longitude: Double?,
+        maxDistance: Double?,
+        minPrice: BigDecimal?,
+        maxPrice: BigDecimal?,
+        category: dev.koenv.rentmycar.domain.enums.CarCategory?,
+        fuelType: dev.koenv.rentmycar.domain.enums.FuelType?,
+        brand: String?
+    ): List<Car> = dbQuery {
+        var query = CarsTable.selectAll()
+        
+        // Basis filters
+        category?.let { query = query.where { CarsTable.category eq it } }
+        fuelType?.let { query = query.where { CarsTable.fuelType eq it } }
+        brand?.let { query = query.where { CarsTable.brand like "%$it%" } }
+        minPrice?.let { query = query.where { CarsTable.ratePerHour greaterEq it } }
+        maxPrice?.let { query = query.where { CarsTable.ratePerHour lessEq it } }
+        
+        // Geografische filtering (simplified - zou bounding box moeten gebruiken voor performance)
+        if (latitude != null && longitude != null && maxDistance != null) {
+            // Voor nu: alle auto's ophalen en later filteren op afstand
+            // TODO: Implementeer bounding box query voor betere performance
+        }
+        
+        query.map(::toEntity)
+    }
+
+    override suspend fun countSearchResults(
+        latitude: Double?,
+        longitude: Double?,
+        maxDistance: Double?,
+        minPrice: BigDecimal?,
+        maxPrice: BigDecimal?,
+        category: dev.koenv.rentmycar.domain.enums.CarCategory?,
+        fuelType: dev.koenv.rentmycar.domain.enums.FuelType?,
+        brand: String?
+    ): Int = dbQuery {
+        var query = CarsTable.selectAll()
+        
+        category?.let { query = query.where { CarsTable.category eq it } }
+        fuelType?.let { query = query.where { CarsTable.fuelType eq it } }
+        brand?.let { query = query.where { CarsTable.brand like "%$it%" } }
+        minPrice?.let { query = query.where { CarsTable.ratePerHour greaterEq it } }
+        maxPrice?.let { query = query.where { CarsTable.ratePerHour lessEq it } }
+        
+        query.count().toInt()
+    }
+
+    override suspend fun findNearbyCars(
+        latitude: Double,
+        longitude: Double,
+        radius: Double,
+        limit: Int
+    ): List<Car> = dbQuery {
+        // Voor nu: alle auto's ophalen en later filteren op afstand
+        // TODO: Implementeer bounding box query voor betere performance
+        CarsTable.selectAll().limit(limit).map(::toEntity)
+    }
 
     private fun toEntity(row: ResultRow) = Car(
         id = row[CarsTable.id],
