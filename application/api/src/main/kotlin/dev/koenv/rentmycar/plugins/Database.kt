@@ -46,7 +46,7 @@ private fun initDatabase(config: ApplicationConfig) {
             val dbName = dbConfig.propertyOrNull("name")?.getString() ?: "rentmycar"
 
             val configBuilder = DBConfigurationBuilder.newBuilder()
-            configBuilder.setPort(3306) // consider 0 to auto-pick a free port in dev
+            configBuilder.setPort(3316) // consider 0 to auto-pick a free port in dev
             configBuilder.setBaseDir(baseDir)
             configBuilder.setDataDir(File(baseDir, "data"))
             configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false)
