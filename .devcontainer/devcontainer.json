@@ -19,13 +19,13 @@
   },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [8080, 3316],
+  "forwardPorts": [8080, 3306],
 
   // Environment variables available inside the remote development container session.
   "remoteEnv": {
     "DB_TYPE": "external",
     "DB_HOST": "db",
-    "DB_PORT": "3316",
+    "DB_PORT": "3306",
     "DB_NAME": "app",
     "DB_USER": "dev",
     "DB_PASSWORD": "dev"
