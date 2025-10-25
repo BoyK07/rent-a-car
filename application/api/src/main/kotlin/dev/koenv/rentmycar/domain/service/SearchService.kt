@@ -1,6 +1,5 @@
 package dev.koenv.rentmycar.domain.service
 
-import dev.koenv.rentmycar.domain.entity.Car
 import dev.koenv.rentmycar.domain.enums.CarCategory
 import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.repository.CarRepository
@@ -15,7 +14,7 @@ class SearchService(
 ) {
     
     /**
-     * Zoek auto's met verschillende filter criteria
+     * Search cars based on multiple possible criteria
      */
     suspend fun searchCars(
         latitude: Double? = null,
@@ -30,9 +29,9 @@ class SearchService(
         limit: Int = 20
     ): SearchResultDto {
         
-        // Valideer fuelType tegen category
+        // Validate fuel type against categories
         validateFuelTypeForCategory(category, fuelType)
-        
+
         val cars = carRepository.searchCars(
             latitude, longitude, maxDistance,
             minPrice, maxPrice, category, fuelType,
@@ -48,11 +47,11 @@ class SearchService(
         val totalPages = ceil(totalCount.toDouble() / limit).toInt()
         val hasNext = page < totalPages
         
-        // Implementeer paginering in de service
+        // implement simple pagination
         val offset = (page - 1) * limit
         val paginatedCars = cars.drop(offset).take(limit)
         
-        // Bereken afstand voor elke auto als locatie zoeken wordt gebruikt
+        // calculate distance for each car if distance search is used
         val carDtos = paginatedCars.map { car ->
             val distance = if (latitude != null && longitude != null) {
                 calculateDistance(latitude, longitude, car.locationLat, car.locationLng)
@@ -67,7 +66,7 @@ class SearchService(
                 distance = distance,
                 locationLat = car.locationLat,
                 locationLng = car.locationLng,
-                thumbnailUrl = null, // TODO: Implementeer foto functionaliteit
+                thumbnailUrl = null, // TODO: implement photo matching functionality
                 isActive = car.isActive
             )
         }
@@ -82,7 +81,7 @@ class SearchService(
     }
     
     /**
-     * Zoek auto's in de buurt
+     * Search nearby cars
      */
     suspend fun searchNearbyCars(request: NearbySearchRequestDto): List<CarSearchDto> {
         val cars = carRepository.findNearbyCars(
@@ -110,14 +109,14 @@ class SearchService(
                 thumbnailUrl = null,
                 isActive = car.isActive
             )
-        }.sortedBy { it.distance } // Sorteer op afstand
+        }.sortedBy { it.distance } // sort on distance
     }
     
     /**
-     * Bereken afstand tussen twee GPS punten met Haversine formule
+     * Calculate distance between two sets of coordinates using the Haversine formula
      */
     private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val earthRadius = 6371.0 // Aardradius in kilometers
+        val earthRadius = 6371.0 // earth radius in kilometers
         
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
@@ -132,7 +131,7 @@ class SearchService(
     }
     
     /**
-     * Valideer of fuelType compatibel is met category
+     * Validate if fuelType is compatible with the category
      */
     private fun validateFuelTypeForCategory(category: CarCategory?, fuelType: FuelType?) {
         if (category != null && fuelType != null) {

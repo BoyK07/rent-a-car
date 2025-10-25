@@ -1,6 +1,8 @@
 package dev.koenv.rentmycar.storage.repository
 
 import dev.koenv.rentmycar.domain.entity.Car
+import dev.koenv.rentmycar.domain.enums.CarCategory
+import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.repository.CarRepository
 import dev.koenv.rentmycar.plugins.dbQuery
 import dev.koenv.rentmycar.storage.db.tables.CarsTable
@@ -9,6 +11,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.greaterEq
 import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.lowerCase
 import org.jetbrains.exposed.v1.jdbc.*
 import java.math.BigDecimal
 import java.util.*
@@ -72,25 +75,29 @@ class CarRepositoryImpl : CarRepository {
         maxDistance: Double?,
         minPrice: BigDecimal?,
         maxPrice: BigDecimal?,
-        category: dev.koenv.rentmycar.domain.enums.CarCategory?,
-        fuelType: dev.koenv.rentmycar.domain.enums.FuelType?,
+        category: CarCategory?,
+        fuelType: FuelType?,
         brand: String?
     ): List<Car> = dbQuery {
-        var query = CarsTable.selectAll()
-        
-        // Basis filters
-        category?.let { query = query.where { CarsTable.category eq it } }
-        fuelType?.let { query = query.where { CarsTable.fuelType eq it } }
-        brand?.let { query = query.where { CarsTable.brand like "%$it%" } }
-        minPrice?.let { query = query.where { CarsTable.ratePerHour greaterEq it } }
-        maxPrice?.let { query = query.where { CarsTable.ratePerHour lessEq it } }
-        
-        // Geografische filtering (simplified - zou bounding box moeten gebruiken voor performance)
-        if (latitude != null && longitude != null && maxDistance != null) {
-            // Voor nu: alle auto's ophalen en later filteren op afstand
-            // TODO: Implementeer bounding box query voor betere performance
+        val query = CarsTable.selectAll()
+
+        if (category != null) {
+            query.andWhere { CarsTable.category eq category }
         }
-        
+        if (fuelType != null) {
+            query.andWhere { CarsTable.fuelType eq fuelType }
+        }
+        if (!brand.isNullOrBlank()) {
+            query.andWhere { CarsTable.brand.lowerCase() like "%${brand.lowercase()}%" }
+        }
+        if (minPrice != null) {
+            query.andWhere { CarsTable.ratePerHour greaterEq minPrice }
+        }
+        if (maxPrice != null) {
+            query.andWhere { CarsTable.ratePerHour lessEq maxPrice }
+        }
+
+        // Future geolocation optimization could go here with bounding-box math
         query.map(::toEntity)
     }
 
@@ -100,18 +107,28 @@ class CarRepositoryImpl : CarRepository {
         maxDistance: Double?,
         minPrice: BigDecimal?,
         maxPrice: BigDecimal?,
-        category: dev.koenv.rentmycar.domain.enums.CarCategory?,
-        fuelType: dev.koenv.rentmycar.domain.enums.FuelType?,
+        category: CarCategory?,
+        fuelType: FuelType?,
         brand: String?
     ): Int = dbQuery {
-        var query = CarsTable.selectAll()
-        
-        category?.let { query = query.where { CarsTable.category eq it } }
-        fuelType?.let { query = query.where { CarsTable.fuelType eq it } }
-        brand?.let { query = query.where { CarsTable.brand like "%$it%" } }
-        minPrice?.let { query = query.where { CarsTable.ratePerHour greaterEq it } }
-        maxPrice?.let { query = query.where { CarsTable.ratePerHour lessEq it } }
-        
+        val query = CarsTable.selectAll()
+
+        if (category != null) {
+            query.andWhere { CarsTable.category eq category }
+        }
+        if (fuelType != null) {
+            query.andWhere { CarsTable.fuelType eq fuelType }
+        }
+        if (!brand.isNullOrBlank()) {
+            query.andWhere { CarsTable.brand.lowerCase() like "%${brand.lowercase()}%" }
+        }
+        if (minPrice != null) {
+            query.andWhere { CarsTable.ratePerHour greaterEq minPrice }
+        }
+        if (maxPrice != null) {
+            query.andWhere { CarsTable.ratePerHour lessEq maxPrice }
+        }
+
         query.count().toInt()
     }
 

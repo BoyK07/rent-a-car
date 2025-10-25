@@ -5,12 +5,12 @@ import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.service.SearchService
 import dev.koenv.rentmycar.dto.search.NearbySearchRequestDto
 import dev.koenv.rentmycar.routes.RouteRegistrar
+import dev.koenv.rentmycar.shared.http.ApiException
 import dev.koenv.rentmycar.shared.util.requireBigDecimalParamOrNull
 import dev.koenv.rentmycar.shared.util.requireDoubleParamOrNull
 import dev.koenv.rentmycar.shared.util.requireIntParamOrNull
 import dev.koenv.rentmycar.shared.util.requireStringParamOrNull
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
@@ -22,39 +22,51 @@ object SearchRoutes : RouteRegistrar {
         route("/search") {
             get("/cars") {
                 try {
-                    // Query parameters ophalen
+                    // Get all query parameters
                     val latitude = call.requireDoubleParamOrNull("latitude")
                     val longitude = call.requireDoubleParamOrNull("longitude")
                     val maxDistance = call.requireDoubleParamOrNull("maxDistance")
                     val minPrice = call.requireBigDecimalParamOrNull("minPrice")
                     val maxPrice = call.requireBigDecimalParamOrNull("maxPrice")
                     val category = call.requireStringParamOrNull("category")?.let { 
-                        try { CarCategory.valueOf(it.uppercase()) } catch (e: IllegalArgumentException) { null }
+                        try { CarCategory.valueOf(it.uppercase()) } catch (_: IllegalArgumentException) { null }
                     }
                     val fuelType = call.requireStringParamOrNull("fuelType")?.let { 
-                        try { FuelType.valueOf(it.uppercase()) } catch (e: IllegalArgumentException) { null }
+                        try { FuelType.valueOf(it.uppercase()) } catch (_: IllegalArgumentException) { null }
                     }
                     val brand = call.requireStringParamOrNull("brand")
                     val page = call.requireIntParamOrNull("page") ?: 1
                     val limit = call.requireIntParamOrNull("limit") ?: 20
 
-                    // Valideer parameters
+                    // validate parameters
                     if (page < 1) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Page moet minimaal 1 zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Page must be at least 1!"
+                        )
                     }
                     if (limit < 1 || limit > 100) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Limit moet tussen 1 en 100 zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Limit must be between 1 and 100!"
+                        )
                     }
                     if (latitude != null && longitude != null) {
                         if (latitude < -90 || latitude > 90) {
-                            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Latitude moet tussen -90 en 90 zijn"))
-                            return@get
+                            throw ApiException(
+                                HttpStatusCode.BadRequest,
+                                code = "SEARCH_ERROR",
+                                message = "Latitude must be between -90 and 90!"
+                            )
                         }
                         if (longitude < -180 || longitude > 180) {
-                            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Longitude moet tussen -180 en 180 zijn"))
-                            return@get
+                            throw ApiException(
+                                HttpStatusCode.BadRequest,
+                                code = "SEARCH_ERROR",
+                                message = "Longitude must be between -180 and 90!"
+                            )
                         }
                     }
 
@@ -74,9 +86,11 @@ object SearchRoutes : RouteRegistrar {
                     call.respond(HttpStatusCode.OK, result)
 
                 } catch (e: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Er is een fout opgetreden bij het zoeken"))
+                    throw ApiException(
+                        HttpStatusCode.BadRequest,
+                        code = "SEARCH_ERROR",
+                        message = e.message.toString(),
+                    )
                 }
             }
 
@@ -87,27 +101,42 @@ object SearchRoutes : RouteRegistrar {
                     val radius = call.requireDoubleParamOrNull("radius") ?: 10.0
                     val limit = call.requireIntParamOrNull("limit") ?: 20
 
-                    // Valideer verplichte parameters
+                    // Validate required parameters
                     if (latitude == null || longitude == null) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Latitude en longitude zijn verplicht"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Latitude and longitude are required",
+                        )
                     }
 
                     if (latitude < -90 || latitude > 90) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Latitude moet tussen -90 en 90 zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Latitude must be between -90 and 90"
+                        )
                     }
                     if (longitude < -180 || longitude > 180) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Longitude moet tussen -180 en 180 zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Longitude must be between -180 and 90"
+                        )
                     }
                     if (radius <= 0 || radius > 100) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Radius moet tussen 0 en 100 km zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Radius must be between 0 and 100"
+                        )
                     }
                     if (limit < 1 || limit > 100) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Limit moet tussen 1 en 100 zijn"))
-                        return@get
+                        throw ApiException(
+                            HttpStatusCode.BadRequest,
+                            code = "SEARCH_ERROR",
+                            message = "Limit must be between -1 and 100"
+                        )
                     }
 
                     val request = NearbySearchRequestDto(
@@ -121,7 +150,11 @@ object SearchRoutes : RouteRegistrar {
                     call.respond(HttpStatusCode.OK, result)
 
                 } catch (e: Exception) {
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Er is een fout opgetreden bij het zoeken"))
+                    throw ApiException(
+                        HttpStatusCode.InternalServerError,
+                        code = "SEARCH_ERROR",
+                        message = e.message.toString(),
+                    )
                 }
             }
         }
