@@ -11,93 +11,125 @@ import dev.koenv.rentmycar.mappers.car.applyPatch
 import dev.koenv.rentmycar.mappers.car.toDto
 import dev.koenv.rentmycar.mappers.car.toEntity
 import dev.koenv.rentmycar.routes.RouteRegistrar
+import dev.koenv.rentmycar.shared.http.ApiException
 import dev.koenv.rentmycar.shared.util.requireBodyOrFail
 import dev.koenv.rentmycar.shared.util.requireRole
 import dev.koenv.rentmycar.shared.util.requireUuidParamOrFail
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.patch
-import io.ktor.server.routing.post
-import io.ktor.server.routing.put
-import io.ktor.server.routing.route
+import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
 import java.util.UUID
 
 object CarRoutes : RouteRegistrar {
-	override fun Route.register() {
-		val carService by inject<CarService>()
+    override fun Route.register() {
+        val carService by inject<CarService>()
 
-		route("/cars") {
-			// List cars (public, filters)
-			get {
-				val ownerId = call.request.queryParameters["ownerId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-				val category = call.request.queryParameters["category"]?.let { runCatching { CarCategory.valueOf(it.uppercase()) }.getOrNull() }
-				val fuelType = call.request.queryParameters["fuelType"]?.let { runCatching { FuelType.valueOf(it.uppercase()) }.getOrNull() }
-				val isActive = call.request.queryParameters["isActive"]?.toBooleanStrictOrNull()
-				val maxRate = call.request.queryParameters["maxRate"]?.let { runCatching { java.math.BigDecimal(it) }.getOrNull() }
+        route("/cars") {
 
-				val items = carService.listFiltered(
-					ownerId = ownerId,
-					category = category,
-					fuelType = fuelType,
-					isActive = isActive,
-					maxRate = maxRate
-				)
-				call.respond(items.map { it.toDto() })
-			}
+            // Public list endpoint
+            get {
+                val ownerId =
+                    call.request.queryParameters["ownerId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                val category =
+                    call.request.queryParameters["category"]?.let { runCatching { CarCategory.valueOf(it.uppercase()) }.getOrNull() }
+                val fuelType =
+                    call.request.queryParameters["fuelType"]?.let { runCatching { FuelType.valueOf(it.uppercase()) }.getOrNull() }
+                val isActive = call.request.queryParameters["isActive"]?.toBooleanStrictOrNull()
+                val maxRate =
+                    call.request.queryParameters["maxRate"]?.let { runCatching { java.math.BigDecimal(it) }.getOrNull() }
 
-			// CRUD: require auth
-			authenticate("auth-jwt") {
-				get("/{id}") {
-					call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-					val id = call.requireUuidParamOrFail("id")
-					val car = carService.getById(id)
-					if (car == null) call.respond(HttpStatusCode.NotFound) else call.respond(car.toDto())
-				}
+                val items = carService.listFiltered(ownerId, category, fuelType, isActive, maxRate)
+                call.respond(items.map { it.toDto() })
+            }
 
-				post {
-					val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-					val ownerId = UUID.fromString(principal.payload.getClaim("userId").asString())
-					val req = call.requireBodyOrFail<CreateCarRequestDto>()
-					val created = carService.create(req.toEntity(ownerId))
-					call.respond(HttpStatusCode.Created, created.toDto())
-				}
+            authenticate("auth-jwt") {
 
-				put("/{id}") {
-					val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-					val ownerId = UUID.fromString(principal.payload.getClaim("userId").asString())
-					val id = call.requireUuidParamOrFail("id")
-					val req = call.requireBodyOrFail<UpdateCarRequestDto>()
-					val updated = carService.update(id, req.toEntity(id, ownerId))
-					if (updated == null) call.respond(HttpStatusCode.NotFound) else call.respond(updated.toDto())
-				}
+                get("/{id}") {
+                    call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                    val id = call.requireUuidParamOrFail("id")
+                    val car = carService.getById(id)
+                    if (car == null) {
+                        throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
+                    }
+                    call.respond(car.toDto())
+                }
 
-				patch("/{id}") {
-					call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-					val id = call.requireUuidParamOrFail("id")
-					val existing = carService.getById(id)
-					if (existing == null) {
-						call.respond(HttpStatusCode.NotFound)
-						return@patch
-					}
-					val req = call.requireBodyOrFail<PatchCarRequestDto>()
-					val patched = req.applyPatch(existing)
-					val saved = carService.update(id, patched)
-					if (saved == null) call.respond(HttpStatusCode.NotFound) else call.respond(saved.toDto())
-				}
+                post {
+                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                    val userId = UUID.fromString(principal.payload.getClaim("userId").asString())
+                    val req = call.requireBodyOrFail<CreateCarRequestDto>()
+                    val created = carService.create(req.toEntity(userId))
+                    call.respond(HttpStatusCode.Created, created.toDto())
+                }
 
-				delete("/{id}") {
-					call.requireRole(Role.ADMIN, Role.DRIVER)
-					val id = call.requireUuidParamOrFail("id")
-					if (carService.delete(id)) call.respond(HttpStatusCode.NoContent) else call.respond(HttpStatusCode.NotFound)
-				}
-			}
-		}
-	}
+                put("/{id}") {
+                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                    val userId = UUID.fromString(principal.payload.getClaim("userId").asString())
+                    val role = Role.valueOf(principal.payload.getClaim("role").asString())
+                    val id = call.requireUuidParamOrFail("id")
+                    val existing = carService.getById(id)
+
+                    if (existing == null) {
+                        throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
+                    }
+
+                    // Owner check: only admin or owner can modify
+                    if (role != Role.ADMIN && existing.ownerId != userId) {
+                        throw ApiException(HttpStatusCode.Forbidden, message = "You are not the owner of this car")
+                    }
+
+                    val req = call.requireBodyOrFail<UpdateCarRequestDto>()
+                    val updated = carService.update(id, req.toEntity(id, existing.ownerId))
+                    if (updated == null) call.respond(HttpStatusCode.NotFound) else call.respond(updated.toDto())
+                }
+
+                patch("/{id}") {
+                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                    val userId = UUID.fromString(principal.payload.getClaim("userId").asString())
+                    val role = Role.valueOf(principal.payload.getClaim("role").asString())
+                    val id = call.requireUuidParamOrFail("id")
+                    val existing = carService.getById(id)
+
+                    if (existing == null) {
+                        throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
+                    }
+
+                    // Owner check
+                    if (role != Role.ADMIN && existing.ownerId != userId) {
+                        throw ApiException(HttpStatusCode.Forbidden, message = "You are not the owner of this car")
+                    }
+
+                    val req = call.requireBodyOrFail<PatchCarRequestDto>()
+                    val patched = req.applyPatch(existing)
+                    val saved = carService.update(id, patched)
+                    if (saved == null) call.respond(HttpStatusCode.NotFound) else call.respond(saved.toDto())
+                }
+
+                delete("/{id}") {
+                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                    val userId = UUID.fromString(principal.payload.getClaim("userId").asString())
+                    val role = Role.valueOf(principal.payload.getClaim("role").asString())
+                    val id = call.requireUuidParamOrFail("id")
+                    val existing = carService.getById(id)
+
+                    if (existing == null) {
+                        throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
+                    }
+
+                    // Only admin or owner may delete
+                    if (role != Role.ADMIN && existing.ownerId != userId) {
+                        throw ApiException(HttpStatusCode.Forbidden, message = "You are not the owner of this car")
+                    }
+
+                    if (carService.delete(id)) {
+                        call.respond(HttpStatusCode.NoContent)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
+                }
+            }
+        }
+    }
 }
-
-
