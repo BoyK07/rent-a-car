@@ -97,6 +97,20 @@ class CarRepositoryImpl : CarRepository {
             query.andWhere { CarsTable.ratePerHour lessEq maxPrice }
         }
 
+        if (latitude != null && longitude != null && maxDistance != null) {
+            val latDelta = maxDistance / 111.32
+            val lngDelta = maxDistance / (111.32 * kotlin.math.cos(Math.toRadians(latitude)))
+            val minLat = latitude - latDelta
+            val maxLat = latitude + latDelta
+            val minLng = longitude - lngDelta
+            val maxLng = longitude + lngDelta
+
+            query.andWhere { CarsTable.locationLat greaterEq minLat }
+            query.andWhere { CarsTable.locationLat lessEq  maxLat }
+            query.andWhere { CarsTable.locationLng greaterEq minLng }
+            query.andWhere { CarsTable.locationLng lessEq  maxLng }
+        }
+
         // Future geolocation optimization could go here with bounding-box math
         query.map(::toEntity)
     }
@@ -129,6 +143,20 @@ class CarRepositoryImpl : CarRepository {
             query.andWhere { CarsTable.ratePerHour lessEq maxPrice }
         }
 
+        if (latitude != null && longitude != null && maxDistance != null) {
+            val latDelta = maxDistance / 111.32
+            val lngDelta = maxDistance / (111.32 * kotlin.math.cos(Math.toRadians(latitude)))
+            val minLat = latitude - latDelta
+            val maxLat = latitude + latDelta
+            val minLng = longitude - lngDelta
+            val maxLng = longitude + lngDelta
+
+            query.andWhere { CarsTable.locationLat greaterEq minLat }
+            query.andWhere { CarsTable.locationLat lessEq  maxLat }
+            query.andWhere { CarsTable.locationLng greaterEq minLng }
+            query.andWhere { CarsTable.locationLng lessEq  maxLng }
+        }
+
         query.count().toInt()
     }
 
@@ -138,9 +166,20 @@ class CarRepositoryImpl : CarRepository {
         radius: Double,
         limit: Int
     ): List<Car> = dbQuery {
-        // Voor nu: alle auto's ophalen en later filteren op afstand
-        // TODO: Implementeer bounding box query voor betere performance
-        CarsTable.selectAll().limit(limit).map(::toEntity)
+        val latDelta = radius / 111.32
+        val lngDelta = radius / (111.32 * kotlin.math.cos(Math.toRadians(latitude)))
+        val minLat = latitude - latDelta
+        val maxLat = latitude + latDelta
+        val minLng = longitude - lngDelta
+        val maxLng = longitude + lngDelta
+
+        CarsTable.selectAll()
+            .andWhere { CarsTable.locationLat greaterEq minLat }
+            .andWhere { CarsTable.locationLat lessEq  maxLat }
+            .andWhere { CarsTable.locationLng greaterEq minLng }
+            .andWhere { CarsTable.locationLng lessEq  maxLng }
+            .limit(limit)
+            .map(::toEntity)
     }
 
     private fun toEntity(row: ResultRow) = Car(
