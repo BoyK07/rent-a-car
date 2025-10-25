@@ -7,9 +7,9 @@ import java.math.BigDecimal
 import java.util.*
 
 interface CarRepository : Repository<Car, UUID> {
-    
+
     /**
-     * Zoek auto's op basis van verschillende criteria
+     * Search cars based on multiple possible criteria
      */
     suspend fun searchCars(
         latitude: Double? = null,
@@ -23,7 +23,7 @@ interface CarRepository : Repository<Car, UUID> {
     ): List<Car>
     
     /**
-     * Tel totaal aantal auto's dat voldoet aan zoekcriteria
+     * Count the amount of found cars based on multiple possible criteria
      */
     suspend fun countSearchResults(
         latitude: Double? = null,
@@ -37,7 +37,7 @@ interface CarRepository : Repository<Car, UUID> {
     ): Int
     
     /**
-     * Zoek auto's in de buurt op basis van GPS coördinaten
+     * Search cars in a radius of the given coordinates (with a limit)
      */
     suspend fun findNearbyCars(
         latitude: Double,

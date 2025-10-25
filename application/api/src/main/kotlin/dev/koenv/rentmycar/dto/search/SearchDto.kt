@@ -1,7 +1,6 @@
 package dev.koenv.rentmycar.dto.search
 
 import dev.koenv.rentmycar.domain.enums.CarCategory
-import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.shared.serialization.BigDecimalSerializer
 import dev.koenv.rentmycar.shared.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
@@ -16,11 +15,11 @@ data class CarSearchDto(
     val model: String,
     val category: CarCategory,
     @Serializable(with = BigDecimalSerializer::class)
-    val ratePerHour: BigDecimal,         // Uurtarief in plaats van dailyRate
-    val distance: Double? = null, // Afstand in km (alleen bij locatie zoeken)
-    val locationLat: Double,         // GPS coördinaten
+    val ratePerHour: BigDecimal,
+    val distance: Double? = null,
+    val locationLat: Double,
     val locationLng: Double,
-    val thumbnailUrl: String? = null, // Eerste foto van de auto
+    val thumbnailUrl: String? = null,
     val isActive: Boolean
 )
 
@@ -37,6 +36,8 @@ data class SearchResultDto(
 data class NearbySearchRequestDto(
     val latitude: Double,
     val longitude: Double,
-    val radius: Double = 10.0, // Default 10km
-    val limit: Int = 20 // Default 20 resultaten
+    val radius: Double = 10.0,
+    val page: Int = 1,
+    val limit: Int = 20
 )
+
