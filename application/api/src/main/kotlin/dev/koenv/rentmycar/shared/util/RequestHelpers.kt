@@ -47,3 +47,37 @@ suspend inline fun <reified T : Any> ApplicationCall.requireBodyOrFail(): T {
         throw RequestAborted()
     }
 }
+
+suspend fun ApplicationCall.requireDoubleParamOrNull(name: String): Double? {
+    val s = parameters[name] ?: return null
+    return try {
+        s.toDouble()
+    } catch (e: NumberFormatException) {
+        respond(HttpStatusCode.BadRequest, "Invalid $name: must be a valid number")
+        throw RequestAborted()
+    }
+}
+
+suspend fun ApplicationCall.requireIntParamOrNull(name: String): Int? {
+    val s = parameters[name] ?: return null
+    return try {
+        s.toInt()
+    } catch (e: NumberFormatException) {
+        respond(HttpStatusCode.BadRequest, "Invalid $name: must be a valid integer")
+        throw RequestAborted()
+    }
+}
+
+suspend fun ApplicationCall.requireStringParamOrNull(name: String): String? {
+    return parameters[name]
+}
+
+suspend fun ApplicationCall.requireBigDecimalParamOrNull(name: String): java.math.BigDecimal? {
+    val s = parameters[name] ?: return null
+    return try {
+        java.math.BigDecimal(s)
+    } catch (e: NumberFormatException) {
+        respond(HttpStatusCode.BadRequest, "Invalid $name: must be a valid decimal number")
+        throw RequestAborted()
+    }
+}

@@ -10,5 +10,6 @@ val serviceModule = module {
     single { CarService(get()) }
     single { DrivingSessionService(get()) }
     single { ReservationService(get()) }
+    single { SearchService(get()) }
     single { UserService(get()) }
 }

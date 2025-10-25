@@ -23,6 +23,8 @@ fun registerAllRoutes(root: Route) {
             RouteGroup("/v1", listOf(
                 dev.koenv.rentmycar.routes.api.v1.auth.AuthRoutes,
                 dev.koenv.rentmycar.routes.api.v1.users.UserRoutes,
+                dev.koenv.rentmycar.routes.api.v1.search.SearchRoutes,
+                dev.koenv.rentmycar.routes.api.v1.cars.CarRoutes,
             ))
         ))
     )
