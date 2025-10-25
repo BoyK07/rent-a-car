@@ -150,7 +150,7 @@ class SearchService(
             }
 
             if (fuelType !in validFuelTypes) {
-                throw IllegalArgumentException("FuelType $fuelType is niet compatibel met Category $category")
+                throw IllegalArgumentException("FuelType $fuelType is not compatible with Category $category")
             }
         }
     }
