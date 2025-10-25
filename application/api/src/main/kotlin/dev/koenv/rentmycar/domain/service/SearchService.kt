@@ -89,35 +89,50 @@ class SearchService(
     /**
      * Search nearby cars
      */
-    suspend fun searchNearbyCars(request: NearbySearchRequestDto): List<CarSearchDto> {
+    suspend fun searchNearbyCars(request: NearbySearchRequestDto): SearchResultDto {
         val cars = carRepository.findNearbyCars(
             request.latitude,
             request.longitude,
             request.radius,
-            request.limit
+            request.limit * request.page
         )
 
-        return cars.map { car ->
+        val withDistance = cars.map { car ->
             val d = calculateDistance(request.latitude, request.longitude, car.locationLat, car.locationLng)
             car to d
         }
-            .filter { it.second <= request.radius }
+
+        val within = withDistance.filter { it.second <= request.radius }
             .sortedBy { it.second }
-            .take(request.limit)
-            .map { (car, d) ->
-                CarSearchDto(
-                    id = car.id!!,
-                    brand = car.brand,
-                    model = car.model,
-                    category = car.category,
-                    ratePerHour = car.ratePerHour,
-                    distance = d,
-                    locationLat = car.locationLat,
-                    locationLng = car.locationLng,
-                    thumbnailUrl = null,
-                    isActive = car.isActive
-                )
-            }
+
+        val totalCount = within.size
+        val totalPages = ceil(totalCount.toDouble() / request.limit).toInt().coerceAtLeast(1)
+        val page = request.page.coerceAtLeast(1)
+        val offset = (page - 1) * request.limit
+        val slice = within.drop(offset).take(request.limit)
+
+        val carDtos = slice.map { (car, d) ->
+            CarSearchDto(
+                id = car.id!!,
+                brand = car.brand,
+                model = car.model,
+                category = car.category,
+                ratePerHour = car.ratePerHour,
+                distance = d,
+                locationLat = car.locationLat,
+                locationLng = car.locationLng,
+                thumbnailUrl = null,
+                isActive = car.isActive
+            )
+        }
+
+        return SearchResultDto(
+            cars = carDtos,
+            totalCount = totalCount,
+            page = page,
+            totalPages = totalPages,
+            hasNext = page < totalPages
+        )
     }
 
     /**

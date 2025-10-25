@@ -37,5 +37,7 @@ data class NearbySearchRequestDto(
     val latitude: Double,
     val longitude: Double,
     val radius: Double = 10.0,
+    val page: Int = 1,
     val limit: Int = 20
 )
+
