@@ -5,6 +5,7 @@ import dev.koenv.rentmycar.domain.enums.CarCategory
 import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.repository.CarRepository
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 
 class CarService(private val repo: CarRepository) {
@@ -43,7 +44,7 @@ class CarService(private val repo: CarRepository) {
         }
 
         val distanceComponent = variableCostPerKm.multiply(BigDecimal(annualKm))
-        return distanceComponent.add(fixedOverhead)
+        return distanceComponent.add(fixedOverhead).setScale(2, RoundingMode.HALF_UP)
     }
 
     fun calculateCostPerKm(car: Car): BigDecimal {
@@ -66,7 +67,7 @@ class CarService(private val repo: CarRepository) {
             }
         }
 
-        val kwhPer100Km = when (car.category) {
+        val kwhPer100Km = when (car.category) { 
             CarCategory.BEV -> BigDecimal("18.0") // kWh/100km
             CarCategory.ICE -> BigDecimal.ZERO
             CarCategory.FCEV -> BigDecimal("1.0") // placeholder kg H2 equivalent below
