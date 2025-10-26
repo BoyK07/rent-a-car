@@ -49,6 +49,18 @@ suspend fun ApplicationCall.requireUuidParamOrFail(name: String): UUID {
     }
 }
 
+/**
+ * Parses an optional UUID query parameter. Returns null when missing, 400 when invalid.
+ */
+suspend fun ApplicationCall.requireUuidParamOrNull(name: String): UUID? {
+    val s = parameters[name] ?: return null
+    return try {
+        UUID.fromString(s)
+    } catch (_: IllegalArgumentException) {
+        throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid UUID")
+    }
+}
+
 suspend inline fun <reified T : Any> ApplicationCall.requireBodyOrFail(): T {
     return try {
         receive<T>()
@@ -94,5 +106,17 @@ suspend fun ApplicationCall.requireLocalDateTimeParamOrNull(name: String): kotli
         kotlinx.datetime.LocalDateTime.parse(s)
     } catch (_: IllegalArgumentException) {
         throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid ISO 8601 datetime")
+    }
+}
+
+/**
+ * Parses an optional Long query parameter. Returns null when missing, 400 when invalid.
+ */
+suspend fun ApplicationCall.requireLongParamOrNull(name: String): Long? {
+    val s = parameters[name] ?: return null
+    return try {
+        s.toLong()
+    } catch (_: NumberFormatException) {
+        throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid number")
     }
 }

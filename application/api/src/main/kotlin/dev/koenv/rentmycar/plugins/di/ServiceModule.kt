@@ -9,7 +9,7 @@ val serviceModule = module {
     single { CarPhotoService(get()) }
     single { CarService(get()) }
     single { DrivingSessionService(get()) }
-    single { ReservationService(get()) }
+    single { ReservationService(get(), get(), get()) }
     single { SearchService(get()) }
     single { UserService(get()) }
 }
