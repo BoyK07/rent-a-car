@@ -26,6 +26,7 @@ fun registerAllRoutes(root: Route) {
                 dev.koenv.rentmycar.routes.api.v1.search.SearchRoutes,
                 dev.koenv.rentmycar.routes.api.v1.cars.CarRoutes,
                 dev.koenv.rentmycar.routes.api.v1.cars.CarPhotoRoutes,
+                dev.koenv.rentmycar.routes.api.v1.cars.CarCostRoutes,
             ))
         ))
     )
