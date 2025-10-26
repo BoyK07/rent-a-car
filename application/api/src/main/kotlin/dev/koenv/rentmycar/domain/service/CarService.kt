@@ -4,8 +4,8 @@ import dev.koenv.rentmycar.domain.entity.Car
 import dev.koenv.rentmycar.domain.enums.CarCategory
 import dev.koenv.rentmycar.domain.enums.FuelType
 import dev.koenv.rentmycar.domain.repository.CarRepository
-import kotlinx.datetime.LocalDateTime
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 
 class CarService(private val repo: CarRepository) {
@@ -32,27 +32,74 @@ class CarService(private val repo: CarRepository) {
             .toList()
     }
 
-    suspend fun findAvailableCarsInRange(
-        start: LocalDateTime,
-        end: LocalDateTime,
-        maxRate: BigDecimal? = null
-    ): List<Car> {
-        TODO("Filter by availability and rate using repositories")
-    }
-
-    suspend fun findCarsNearLocation(
-        latitude: Double,
-        longitude: Double,
-        radiusKm: Double
-    ): List<Car> {
-        TODO("Return cars within radiusKm of given coordinates")
-    }
-
     fun calculateTcoPerYear(car: Car, annualKm: Int = 15000): BigDecimal {
-        TODO("Compute annual TCO based on car category and usage")
+        // Cost per km component (energy + maintenance)
+        val variableCostPerKm = calculateCostPerKm(car)
+
+        // Fixed overheads (e.g., insurance, tax, parking), category-based defaults
+        val fixedOverhead = when (car.category) {
+            CarCategory.ICE -> BigDecimal("1000.00")
+            CarCategory.BEV -> BigDecimal("800.00")
+            CarCategory.FCEV -> BigDecimal("1200.00")
+        }
+
+        val distanceComponent = variableCostPerKm.multiply(BigDecimal(annualKm))
+        return distanceComponent.add(fixedOverhead).setScale(2, RoundingMode.HALF_UP)
     }
 
     fun calculateCostPerKm(car: Car): BigDecimal {
-        TODO("Compute per-kilometer cost depending on category and fuel type")
+        // Energy price assumptions
+        val petrolPricePerLiter = BigDecimal("1.90")
+        val dieselPricePerLiter = BigDecimal("1.70")
+        val lpgPricePerLiter = BigDecimal("1.05")
+        val electricityPricePerKwh = BigDecimal("0.30")
+
+        // Efficiency assumptions
+        val litersPer100Km = when (car.fuelType) {
+            FuelType.PETROL -> BigDecimal("7.0")
+            FuelType.DIESEL -> BigDecimal("6.0")
+            FuelType.LPG -> BigDecimal("8.0")
+            FuelType.HYBRIDE -> BigDecimal("5.0")
+            FuelType.ELECTRIC -> BigDecimal.ZERO
+            null -> when (car.category) {
+                CarCategory.BEV -> BigDecimal.ZERO
+                else -> BigDecimal("7.0")
+            }
+        }
+
+        val kwhPer100Km = when (car.category) { 
+            CarCategory.BEV -> BigDecimal("18.0") // kWh/100km
+            CarCategory.ICE -> BigDecimal.ZERO
+            CarCategory.FCEV -> BigDecimal("1.0") // placeholder kg H2 equivalent below
+        }
+
+        // Energy cost per km component
+        val energyCostPerKm: BigDecimal = when (car.category) {
+            CarCategory.BEV ->
+                // (kWh/100km * price) / 100
+                kwhPer100Km.multiply(electricityPricePerKwh).divide(BigDecimal(100))
+            CarCategory.ICE -> {
+                val pricePerLiter = when (car.fuelType) {
+                    FuelType.PETROL -> petrolPricePerLiter
+                    FuelType.DIESEL -> dieselPricePerLiter
+                    FuelType.LPG -> lpgPricePerLiter
+                    FuelType.HYBRIDE -> petrolPricePerLiter
+                    FuelType.ELECTRIC, null -> petrolPricePerLiter
+                }
+                litersPer100Km.multiply(pricePerLiter).divide(BigDecimal(100))
+            }
+            CarCategory.FCEV ->
+                // Placeholder: treat as 9 EUR / 100km
+                BigDecimal("9.00").divide(BigDecimal(100))
+        }
+
+        // Maintenance/tires/etc per km
+        val maintenancePerKm = when (car.category) {
+            CarCategory.BEV -> BigDecimal("0.04")
+            CarCategory.ICE -> BigDecimal("0.06")
+            CarCategory.FCEV -> BigDecimal("0.07")
+        }
+
+        return energyCostPerKm.add(maintenancePerKm)
     }
 }
