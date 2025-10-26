@@ -87,3 +87,12 @@ suspend fun ApplicationCall.requireBigDecimalParamOrNull(name: String): java.mat
         throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid number")
     }
 }
+
+suspend fun ApplicationCall.requireLocalDateTimeParamOrNull(name: String): kotlinx.datetime.LocalDateTime? {
+    val s = request.queryParameters[name] ?: return null
+    return try {
+        kotlinx.datetime.LocalDateTime.parse(s)
+    } catch (_: IllegalArgumentException) {
+        throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid ISO 8601 datetime")
+    }
+}

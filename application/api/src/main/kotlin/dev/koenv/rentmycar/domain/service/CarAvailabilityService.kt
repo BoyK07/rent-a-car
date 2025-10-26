@@ -18,4 +18,20 @@ class CarAvailabilityService(private val repo: CarAvailabilityRepository) {
             it.startTime <= start && it.endTime >= end
         }
     }
+
+    suspend fun listFiltered(
+        carId: UUID? = null,
+        startTime: LocalDateTime? = null,
+        endTime: LocalDateTime? = null
+    ): List<CarAvailability> {
+        val all = when {
+            carId != null -> repo.findByCarId(carId)
+            else -> repo.findAll()
+        }
+
+        return all.filter { availability ->
+            (startTime == null || availability.startTime <= startTime) &&
+            (endTime == null || availability.endTime >= endTime)
+        }
+    }
 }
