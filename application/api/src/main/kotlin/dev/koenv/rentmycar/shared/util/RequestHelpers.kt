@@ -100,6 +100,15 @@ suspend fun ApplicationCall.requireBigDecimalParamOrNull(name: String): java.mat
     }
 }
 
+suspend fun ApplicationCall.requireLocalDateTimeParamOrNull(name: String): kotlinx.datetime.LocalDateTime? {
+    val s = request.queryParameters[name] ?: return null
+    return try {
+        kotlinx.datetime.LocalDateTime.parse(s)
+    } catch (_: IllegalArgumentException) {
+        throw ApiException(HttpStatusCode.BadRequest, message = "Invalid $name: must be a valid ISO 8601 datetime")
+    }
+}
+
 /**
  * Parses an optional Long query parameter. Returns null when missing, 400 when invalid.
  */
