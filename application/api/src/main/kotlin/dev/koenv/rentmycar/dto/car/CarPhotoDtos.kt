@@ -23,8 +23,5 @@ data class CreateCarPhotoRequestDto(
 @Serializable
 data class PatchCarPhotoRequestDto(
 	val url: String? = null,
-	isPrimary: Boolean? = null
+	val isPrimary: Boolean? = null
 )
-
-
-

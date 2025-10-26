@@ -1,5 +1,6 @@
 package dev.koenv.rentmycar.domain.service
 
+import dev.koenv.rentmycar.domain.enums.Role
 import dev.koenv.rentmycar.domain.repository.UserRepository
 import dev.koenv.rentmycar.dto.auth.*
 import dev.koenv.rentmycar.mappers.auth.toEntity
@@ -12,14 +13,24 @@ class AuthService(
     private val repo: UserRepository,
     private val config: ApplicationConfig
 ) {
+
+    /**
+     * Registers a new user as DRIVER or MEMBER.
+     * ADMIN accounts must be created/updated manually.
+     */
     suspend fun register(req: RegisterRequestDto): AuthResponseDto {
         validateRegistration(req.email, req.password)
 
         if (repo.findByEmail(req.email) != null)
             throw IllegalArgumentException("Email already registered")
 
+        val selectedRole = req.role ?: Role.MEMBER
+        require(Role.isRegisterable(selectedRole)) {
+            "Only DRIVER or MEMBER roles can be registered directly"
+        }
+
         val hash = PasswordUtil.hash(req.password)
-        val created = repo.create(req.toEntity(hash))
+        val created = repo.create(req.toEntity(hash, selectedRole))
 
         val token = JwtUtil.generateToken(
             userId = created.id!!,
@@ -32,6 +43,9 @@ class AuthService(
         return AuthResponseDto(token, created.toDto())
     }
 
+    /**
+     * Logs in a user and issues a JWT if credentials are valid.
+     */
     suspend fun login(req: LoginRequestDto): AuthResponseDto {
         val user = repo.findByEmail(req.email)
             ?: throw IllegalArgumentException("Invalid credentials")
