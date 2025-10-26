@@ -53,6 +53,34 @@ fun Application.configureErrorHandling() {
             )
         }
 
+			exception<org.jetbrains.exposed.v1.exceptions.ExposedSQLException> { call, e ->
+				val msg = e.cause?.message ?: e.message ?: "Database error"
+            if (msg.contains("Cannot add or update a child row", ignoreCase = true) ||
+                msg.contains("FOREIGN KEY", ignoreCase = true)) {
+                log.warn("BadRequest FK violation uri=${call.request.uri} trace=${call.callId}")
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(
+                        code = "FK_CONSTRAINT_VIOLATION",
+                        message = "Invalid reference to related entity",
+                        status = HttpStatusCode.BadRequest.value,
+                        traceId = call.callId
+                    )
+                )
+            } else {
+                log.error("Unhandled DB error uri=${call.request.uri} trace=${call.callId}", e)
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse(
+                        code = "INTERNAL_SERVER_ERROR",
+                        message = "Internal Server Error",
+                        status = 500,
+                        traceId = call.callId
+                    )
+                )
+            }
+        }
+
         exception<Throwable> { call, e ->
             log.error("Unhandled 500 uri=${call.request.uri} trace=${call.callId}", e)
             call.respond(

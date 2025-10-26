@@ -14,6 +14,9 @@ import dev.koenv.rentmycar.routes.RouteRegistrar
 import dev.koenv.rentmycar.shared.util.requireBodyOrFail
 import dev.koenv.rentmycar.shared.util.requireRole
 import dev.koenv.rentmycar.shared.util.requireUuidParamOrFail
+import dev.koenv.rentmycar.shared.util.requireUuidParamOrNull
+import dev.koenv.rentmycar.shared.util.requireLongParamOrNull
+import dev.koenv.rentmycar.shared.http.ApiException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.response.respond
@@ -25,6 +28,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toLocalDateTime
 import org.koin.ktor.ext.inject
 import java.util.UUID
 
@@ -38,30 +42,22 @@ object ReservationRoutes : RouteRegistrar {
 				// List with filters
 				get {
 					call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-					val renterId = call.request.queryParameters["renterId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-					val carId = call.request.queryParameters["carId"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-					val status = call.request.queryParameters["status"]?.let { runCatching { ReservationStatus.valueOf(it.uppercase()) }.getOrNull() }
-					val startQ = call.request.queryParameters["start"]
-					val endQ = call.request.queryParameters["end"]
+						val renterId = call.requireUuidParamOrNull("renterId")
+						val carId = call.requireUuidParamOrNull("carId")
+						val status = call.request.queryParameters["status"]?.uppercase()?.let {
+							try { ReservationStatus.valueOf(it) } catch (_: IllegalArgumentException) {
+								throw ApiException(io.ktor.http.HttpStatusCode.BadRequest, message = "Invalid status value")
+							}
+						}
+						val startMillis = call.requireLongParamOrNull("start")
+						val endMillis = call.requireLongParamOrNull("end")
 					val all = reservationService.getAll()
 					val filtered = all.asSequence()
 						.filter { renterId == null || it.renterId == renterId }
 						.filter { carId == null || it.carId == carId }
 						.filter { status == null || it.status == status }
-						.filter {
-							if (startQ == null) true else runCatching {
-								val sMillis = startQ.toLong()
-								val s = kotlinx.datetime.Instant.fromEpochMilliseconds(sMillis).toLocalDateTime(kotlinx.datetime.TimeZone.UTC)
-								it.endTime >= s
-							}.getOrDefault(true)
-						}
-						.filter {
-							if (endQ == null) true else runCatching {
-								val eMillis = endQ.toLong()
-								val e = kotlinx.datetime.Instant.fromEpochMilliseconds(eMillis).toLocalDateTime(kotlinx.datetime.TimeZone.UTC)
-								it.startTime <= e
-							}.getOrDefault(true)
-						}
+							.filter { startMillis == null || it.endTime >= kotlinx.datetime.Instant.fromEpochMilliseconds(startMillis).toLocalDateTime(kotlinx.datetime.TimeZone.UTC) }
+							.filter { endMillis == null || it.startTime <= kotlinx.datetime.Instant.fromEpochMilliseconds(endMillis).toLocalDateTime(kotlinx.datetime.TimeZone.UTC) }
 						.toList()
 					call.respond(filtered.map { it.toDto() })
 				}

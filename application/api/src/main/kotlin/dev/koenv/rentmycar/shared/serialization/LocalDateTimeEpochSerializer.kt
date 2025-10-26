@@ -11,6 +11,7 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.time.ExperimentalTime
 
 /**
  * Serializes LocalDateTime to/from UNIX epoch milliseconds in UTC.
@@ -18,7 +19,8 @@ import kotlinx.serialization.encoding.Encoder
 object LocalDateTimeEpochSerializer : KSerializer<LocalDateTime> {
 	override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("LocalDateTimeEpochMillis", PrimitiveKind.LONG)
 
-	override fun serialize(encoder: Encoder, value: LocalDateTime) {
+	@OptIn(ExperimentalTime::class)
+    override fun serialize(encoder: Encoder, value: LocalDateTime) {
 		val instant = value.toInstant(TimeZone.UTC)
 		encoder.encodeLong(instant.toEpochMilliseconds())
 	}
