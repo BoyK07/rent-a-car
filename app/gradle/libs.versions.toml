@@ -1,0 +1,224 @@
+[versions]
+
+# =====================================
+# Tooling / Kotlin
+# =====================================
+kotlin = "2.3.0"
+ktor = "3.3.3"
+logback = "1.5.22"
+junit = "4.13.2"
+kotlinx-serialization-json = "1.8.0"
+kotlinx-datetime = "0.6.1"
+kotlin-serialization-plugin = "2.3.0"
+bignum = "0.3.10"
+lumoui = "1.2.5"
+voyager = "1.1.0-beta03"
+multiplatform-settings = "1.2.0"
+kotlinx-coroutines = "1.10.2"
+
+# =====================================
+# Server / Backend
+# =====================================
+exposed = "1.0.0-rc-1"
+mariadb = "3.3.0"
+argon2 = "2.12"
+prometheus = "1.6.13"
+hikari = "5.1.0"
+flyway = "11.14.0"
+koin = "4.1.0"
+ktor-rate-limit = "2.2.1"
+
+# =====================================
+# Android / Compose
+# =====================================
+agp = "8.12.0"
+composeMultiplatform = "1.9.3"
+
+android-compileSdk = "36"
+android-minSdk = "24"
+android-targetSdk = "36"
+
+androidx-core = "1.17.0"
+androidx-appcompat = "1.7.1"
+androidx-activity = "1.12.2"
+androidx-lifecycle = "2.9.6"
+androidx-espresso = "3.7.0"
+androidx-testExt = "1.3.0"
+
+compose-material = "1.5.0"
+
+[libraries]
+
+# =====================================
+# Kotlin
+# =====================================
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+# =====================================
+# Kotlinx - Multiplatform
+# =====================================
+bignum = { module = "com.ionspin.kotlin:bignum", version.ref = "bignum" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+# =====================================
+# Ktor - Common
+# =====================================
+ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
+
+# =====================================
+# Ktor - Client Core
+# =====================================
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-serialization-kotlinx-json-multiplatform = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# =====================================
+# Ktor - Client Engines
+# =====================================
+ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+# =====================================
+# Navigation
+# =====================================
+voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
+voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
+
+# =====================================
+# Multiplatform Storage
+# =====================================
+multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
+multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
+
+# =====================================
+# Ktor - Core Server
+# =====================================
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-server-host-common = { module = "io.ktor:ktor-server-host-common-jvm", version.ref = "ktor" }
+
+# =====================================
+# Ktor - Server Features
+# =====================================
+ktor-server-default-headers = { module = "io.ktor:ktor-server-default-headers-jvm", version.ref = "ktor" }
+ktor-server-compression = { module = "io.ktor:ktor-server-compression-jvm", version.ref = "ktor" }
+ktor-server-cors = { module = "io.ktor:ktor-server-cors-jvm", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-server-call-id = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
+ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages-jvm", version.ref = "ktor" }
+ktor-server-request-validation = { module = "io.ktor:ktor-server-request-validation-jvm", version.ref = "ktor" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources-jvm", version.ref = "ktor" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor" }
+
+# =====================================
+# Ktor - Serialization
+# =====================================
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+
+# =====================================
+# Ktor - Authentication
+# =====================================
+ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
+ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt-jvm", version.ref = "ktor" }
+
+# =====================================
+# Security
+# =====================================
+argon2 = { module = "de.mkammerer:argon2-jvm", version.ref = "argon2" }
+
+# =====================================
+# Metrics & Monitoring
+# =====================================
+ktor-server-metrics-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer-jvm", version.ref = "ktor" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "prometheus" }
+
+# =====================================
+# Rate Limiting
+# =====================================
+ktor-server-rate-limiting = { module = "io.github.flaxoos:ktor-server-rate-limiting", version.ref = "ktor-rate-limit" }
+
+# =====================================
+# Database - Exposed ORM
+# =====================================
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+
+# =====================================
+# Database - Exposed Migrations / DateTime
+# =====================================
+exposed-migration-core = { module = "org.jetbrains.exposed:exposed-migration-core", version.ref = "exposed" }
+exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
+exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
+
+# =====================================
+# Database - Drivers
+# =====================================
+mariadb4j = { module = "ch.vorburger.mariaDB4j:mariaDB4j", version.ref = "mariadb" }
+mariadb-jdbc = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
+
+# =====================================
+# Database - Connection Pool
+# =====================================
+hikari-cp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+
+# =====================================
+# Database - Migrations
+# =====================================
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-mysql = { module = "org.flywaydb:flyway-mysql", version.ref = "flyway" }
+
+# =====================================
+# Dependency Injection
+# =====================================
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+
+# =====================================
+# Logging
+# =====================================
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+# =====================================
+# Testing
+# =====================================
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+junit = { module = "junit:junit", version.ref = "junit" }
+koin-test-junit5 = { module = "io.insert-koin:koin-test-junit5", version.ref = "koin" }
+
+# =====================================
+# Android / Compose
+# =====================================
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-testExt" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
+
+compose-material = { module = "androidx.compose.material:material", version.ref = "compose-material" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "compose-material" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-material" }
+
+[plugins]
+
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-serialization-plugin" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+lumoui = { id = "com.nomanr.plugin.lumo", version.ref = "lumoui" }

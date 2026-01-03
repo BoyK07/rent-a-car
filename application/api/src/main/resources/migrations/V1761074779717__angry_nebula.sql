@@ -1,1 +1,0 @@
-ALTER TABLE users ADD `name` VARCHAR(255) NOT NULL;

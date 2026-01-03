@@ -1,0 +1,206 @@
+package dev.koenv.rentmycar.app.screens.car
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.shared.SharedModule
+import dev.koenv.rentmycar.shared.dto.car.CarDto
+import kotlinx.coroutines.launch
+import kotlin.uuid.Uuid
+
+/**
+ * Car detail screen displaying detailed information about a specific car.
+ * Automatically marks the car as "viewed" in local storage.
+ */
+data class CarDetailScreen(
+    val carId: Uuid
+) : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
+        val carsRepository = remember { SharedModule.carsRepository }
+        
+        var car by remember { mutableStateOf<CarDto?>(null) }
+        var isLoading by remember { mutableStateOf(true) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
+        
+        val scope = rememberCoroutineScope()
+        
+        // Fetch car details on screen load
+        LaunchedEffect(carId) {
+            scope.launch {
+                carsRepository.getCar(carId).onSuccess { carDto ->
+                    car = carDto
+                    isLoading = false
+                }.onFailure { error ->
+                    errorMessage = error.message ?: "Failed to load car details"
+                    isLoading = false
+                }
+            }
+        }
+        
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Car Details") },
+                    navigationIcon = {
+                        IconButton(onClick = { navigator.pop() }) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    errorMessage != null -> {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { navigator.pop() }) {
+                                Text("Go Back")
+                            }
+                        }
+                    }
+                    car != null -> {
+                        CarDetailContent(car = car!!)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CarDetailContent(car: CarDto) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Main info card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "${car.brand} ${car.model}",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = car.category.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+        }
+        
+        // Pricing card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Pricing",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Rate per hour:")
+                    Text(
+                        text = "${car.ratePerHour}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+        
+        // Details card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Details",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                DetailRow("Category", car.category.name)
+                if (car.fuelType != null) {
+                    DetailRow("Fuel Type", car.fuelType!!.name)
+                }
+                DetailRow(
+                    "Status",
+                    if (car.isActive) "Available" else "Unavailable"
+                )
+                DetailRow("Car ID", car.id.toString().take(8) + "...")
+            }
+        }
+        
+        // Location card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Location",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                DetailRow("Latitude", car.locationLat.toString())
+                DetailRow("Longitude", car.locationLng.toString())
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}

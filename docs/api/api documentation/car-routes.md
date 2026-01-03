@@ -3,9 +3,10 @@
 Base URL: `http://localhost:8080`
 
 ### What it does
-- Lists available cars with filters.
-- Retrieves a single car by ID.
-- Creates, updates (full/partial), and deletes cars.
+- Lists available cars with filters (basic and location-based)
+- Supports location-based search with distance calculations
+- Retrieves a single car by ID
+- Creates, updates (full/partial), and deletes cars
 
 ### Authentication and authorization
 - Uses JWT Bearer auth.
@@ -13,11 +14,11 @@ Base URL: `http://localhost:8080`
 - Include header: `Authorization: Bearer <token>` on secured routes.
 - Route protection:
   - `GET /api/v1/cars` is public (no auth).
-  - `GET /api/v1/cars/{id}` requires any authenticated role: `ADMIN`, `DRIVER`, or `MEMBER`.
-  - `POST /api/v1/cars` requires any authenticated role. The car is created for the authenticated `userId` as `ownerId`.
-  - `PUT /api/v1/cars/{id}` requires any authenticated role.
-  - `PATCH /api/v1/cars/{id}` requires any authenticated role.
-  - `DELETE /api/v1/cars/{id}` requires `ADMIN` or `DRIVER`.
+  - `GET /api/v1/cars/{id}` is public (no auth).
+  - `POST /api/v1/cars` requires `ADMIN` or `DRIVER` role. The car is created for the authenticated `userId` as `ownerId`.
+  - `PUT /api/v1/cars/{id}` requires `ADMIN` or `DRIVER` role. Only admin or owner can modify.
+  - `PATCH /api/v1/cars/{id}` requires `ADMIN` or `DRIVER` role. Only admin or owner can modify.
+  - `DELETE /api/v1/cars/{id}` requires `ADMIN` or `DRIVER` role. Only admin or owner can delete.
 
 Notes:
 - Enums: `category` = `ICE` | `BEV` | `FCEV`; `fuelType` = `PETROL` | `DIESEL` | `LPG` | `ELECTRIC` | `HYBRIDE`.
@@ -26,11 +27,27 @@ Notes:
 ### Endpoints
 
 #### GET /api/v1/cars (public)
-List cars with optional filters.
+List cars with optional filters and location-based search.
+
+**Basic Filtering (returns simple list):**
 - Query params: `ownerId`, `category`, `fuelType`, `isActive`, `maxRate`
 - Example: `/api/v1/cars?category=BEV&isActive=true&maxRate=20.00`
 
-Response 200:
+**Location-Based Search (returns paginated results with metadata):**
+When any of these parameters are provided: `latitude`, `longitude`, `maxDistance`, `minPrice`, `maxPrice`, `brand`, `page`, `limit`
+- `latitude` (optional): Latitude for location search (-90 to 90)
+- `longitude` (optional): Longitude for location search (-180 to 180)
+- `maxDistance` (optional): Maximum distance in kilometers
+- `minPrice` (optional): Minimum rate per hour (decimal)
+- `maxPrice` (optional): Maximum rate per hour (decimal)
+- `brand` (optional): Car brand (string)
+- `category` (optional): Car category (`ICE`, `BEV`, `FCEV`)
+- `fuelType` (optional): Fuel type (`PETROL`, `DIESEL`, `LPG`, `ELECTRIC`, `HYBRIDE`)
+- `page` (optional): Page number (default: 1, min: 1)
+- `limit` (optional): Results per page (default: 20, min: 1, max: 100)
+- Example: `/api/v1/cars?latitude=51.587&longitude=4.775&maxDistance=10&category=BEV&page=1&limit=20`
+
+**Basic Filter Response 200:**
 ```json
 [
   {
@@ -48,7 +65,31 @@ Response 200:
 ]
 ```
 
-#### GET /api/v1/cars/{id} (secured)
+**Location-Based Search Response 200:**
+```json
+{
+  "cars": [
+    {
+      "id": "c0a8012c-7d8c-4a12-ae3e-7f7c20a1b111",
+      "brand": "Tesla",
+      "model": "Model 3",
+      "category": "BEV",
+      "ratePerHour": "12.50",
+      "distance": 3.45,
+      "locationLat": 51.590,
+      "locationLng": 4.780,
+      "thumbnailUrl": null,
+      "isActive": true
+    }
+  ],
+  "totalCount": 5,
+  "page": 1,
+  "totalPages": 1,
+  "hasNext": false
+}
+```
+
+#### GET /api/v1/cars/{id} (public)
 Get car by ID.
 
 Responses:
@@ -159,7 +200,7 @@ Responses:
 5) List cars (public):
    - GET `{{baseUrl}}/api/v1/cars?category=BEV&isActive=true&maxRate=20.00`
 
-6) Get by ID (Authorization: Bearer <token>):
+6) Get by ID (public):
    - GET `{{baseUrl}}/api/v1/cars/{{id}}`
 
 7) Update (PUT) or patch (PATCH) by ID (Authorization: Bearer <token>):

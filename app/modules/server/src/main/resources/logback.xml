@@ -1,0 +1,61 @@
+<configuration>
+
+    <!-- Root level via env, default INFO -->
+    <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
+    <!-- Rolling retention (days) -->
+    <property name="ROLLING_HISTORY" value="${LOG_HISTORY_DAYS:-30}"/>
+    <!-- Koin DI log level via env -->
+    <property name="KOIN_LOG_LEVEL" value="${KOIN_LOG_LEVEL:-INFO}"/>
+
+    <!-- ===== Console (human-readable) ===== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- time | LVL | thread | traceId | logger - message -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] [%X{call-id:-—}] %cyan(%logger{36}) - %msg%n%ex{short}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===== Rolling file (prod ingestion) ===== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>${ROLLING_HISTORY}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <!-- plain text, one line per event -->
+            <pattern>%d{ISO8601} %-5level [%thread] [%X{call-id:-—}] %logger{36} - %replace(%msg){'\r|\n',' '}{} %n%xEx{full}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===== Async wrappers to avoid blocking I/O ===== -->
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CONSOLE"/>
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+    <!-- Root -->
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+
+    <!-- Tame noisy deps -->
+    <logger name="io.netty" level="WARN"/>
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    <logger name="org.jetbrains.exposed" level="INFO"/>
+
+    <!-- Koin DI logs -->
+    <logger name="org.koin" level="${KOIN_LOG_LEVEL}"/>
+
+</configuration>
