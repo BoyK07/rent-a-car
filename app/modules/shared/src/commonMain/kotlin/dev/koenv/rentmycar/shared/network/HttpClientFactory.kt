@@ -7,6 +7,7 @@ import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
+import io.ktor.client.plugins.resources.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
@@ -24,6 +25,9 @@ object HttpClientFactory {
             defaultRequest {
                 url(baseUrl)
             }
+            
+            // Type-safe routing with Resources
+            install(Resources)
             
             // JSON content negotiation
             install(ContentNegotiation) {

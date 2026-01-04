@@ -41,6 +41,7 @@ kotlin {
             // Ktor - Common
             // =====================================
             api(libs.ktor.http)
+            api(libs.ktor.resources)
             
             // =====================================
             // Ktor - Client
@@ -49,6 +50,7 @@ kotlin {
             api(libs.ktor.client.content.negotiation)
             api(libs.ktor.client.auth)
             api(libs.ktor.client.logging)
+            api(libs.ktor.client.resources)
             api(libs.ktor.serialization.kotlinx.json.multiplatform)
             
             // =====================================

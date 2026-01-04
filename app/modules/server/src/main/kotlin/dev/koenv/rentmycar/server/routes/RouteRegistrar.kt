@@ -17,42 +17,30 @@ interface RouteRegistrar : RouteNode {
     fun Route.register()
 }
 
-data class RouteGroup(
-    val prefix: String,
-    val children: List<RouteNode>
-) : RouteNode
-
 fun registerAllRoutes(root: Route) {
     val tree: List<RouteNode> = listOf(
-        RouteGroup(
-            "/", listOf(
-                RootRoutes,
-            )
-        ),
-        RouteGroup(
-            "/api", listOf(
-                RouteGroup(
-                    "/v1", listOf(
-                        AuthRoutes,
-                        UserRoutes,
-                        CarRoutes,
-                        CarPhotoRoutes,
-                        CarAvailabilityRoutes,
-                        AvailabilityRoutes,
-                        CarCostRoutes,
-                        ReservationRoutes,
-                    )
-                )
-            )
-        )
+        // =====================================
+        // Root routes
+        // =====================================
+        RootRoutes,
+
+        // =====================================
+        // API v1 routes
+        // =====================================
+        AuthRoutes,
+        UserRoutes,
+        CarRoutes,
+        CarPhotoRoutes,
+        CarAvailabilityRoutes,
+        AvailabilityRoutes,
+        CarCostRoutes,
+        ReservationRoutes,
     )
 
     fun Route.registerNode(node: RouteNode) {
         when (node) {
             is RouteRegistrar -> with(node) { register() }
-            is RouteGroup -> route(node.prefix) {
-                node.children.forEach { child -> registerNode(child) }
-            }
+            else -> error("Unknown node type: ${node.javaClass.canonicalName}")
         }
     }
 

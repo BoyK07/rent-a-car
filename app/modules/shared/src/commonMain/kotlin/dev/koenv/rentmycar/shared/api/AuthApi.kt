@@ -3,8 +3,11 @@ package dev.koenv.rentmycar.shared.api
 import dev.koenv.rentmycar.shared.dto.auth.AuthResponseDto
 import dev.koenv.rentmycar.shared.dto.auth.LoginRequestDto
 import dev.koenv.rentmycar.shared.dto.auth.RegisterRequestDto
+import dev.koenv.rentmycar.shared.http.ApiResponse
+import dev.koenv.rentmycar.shared.resources.ApiV1
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.resources.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 
@@ -19,11 +22,16 @@ class AuthApi(
      */
     suspend fun register(request: RegisterRequestDto): Result<AuthResponseDto> {
         return try {
-            val response = httpClient.post("/api/v1/auth/register") {
+            val response = httpClient.post(ApiV1.Auth.Register()) {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
-            Result.success(response.body())
+            val apiResponse = response.body<ApiResponse<AuthResponseDto>>()
+            if (apiResponse.success && apiResponse.data != null) {
+                Result.success(apiResponse.data)
+            } else {
+                Result.failure(Exception(apiResponse.message ?: "Registration failed"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -34,11 +42,16 @@ class AuthApi(
      */
     suspend fun login(request: LoginRequestDto): Result<AuthResponseDto> {
         return try {
-            val response = httpClient.post("/api/v1/auth/login") {
+            val response = httpClient.post(ApiV1.Auth.Login()) {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
-            Result.success(response.body())
+            val apiResponse = response.body<ApiResponse<AuthResponseDto>>()
+            if (apiResponse.success && apiResponse.data != null) {
+                Result.success(apiResponse.data)
+            } else {
+                Result.failure(Exception(apiResponse.message ?: "Login failed"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
