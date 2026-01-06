@@ -2,13 +2,18 @@ package dev.koenv.rentmycar.app
 
 import android.app.Application
 import dev.koenv.rentmycar.shared.SharedModule
+import dev.koenv.rentmycar.shared.db.DatabaseDriverFactory
 import dev.koenv.rentmycar.shared.storage.SettingsFactory
 
 class RentMyCarApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        
         // Initialize platform-specific storage
         SettingsFactory.init(applicationContext)
+        
+        // Initialize database
+        SharedModule.initialize(DatabaseDriverFactory(applicationContext))
         
         // Configure API base URL
         configureApiUrl()

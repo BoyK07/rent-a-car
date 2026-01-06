@@ -16,9 +16,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
+import dev.koenv.rentmycar.app.screens.admin.UserManagementScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
+import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
+import dev.koenv.rentmycar.app.ui.components.BottomNavItem
 import dev.koenv.rentmycar.app.ui.components.Button
-import dev.koenv.rentmycar.app.ui.components.NavigationBar
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.shared.SharedModule
@@ -36,10 +38,14 @@ class HomeScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
+        val authRepository = remember { SharedModule.authRepository }
         
         var cars by remember { mutableStateOf<List<CarDto>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        
+        val currentUser by authRepository.currentUser.collectAsState()
+        val isAdmin = currentUser?.role?.name == "ADMIN"
         
         val scope = rememberCoroutineScope()
         
@@ -56,15 +62,38 @@ class HomeScreen : Screen {
             }
         }
         
+        // Define bottom navigation items
+        val navItems = remember(isAdmin) {
+            buildList {
+                add(BottomNavItem("Home", Icons.Default.Home, "home"))
+                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
+                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
+                if (isAdmin) {
+                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
+                }
+            }
+        }
+        
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Available Cars") },
-                    actions = {
-                        IconButton(onClick = { navigator.push(ProfileScreen()) }) {
-                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                    title = { Text("Available Cars") }
+                )
+            },
+            bottomBar = {
+                AppBottomNavigationBar(
+                    selectedIndex = 0, // Home is selected
+                    onItemSelected = { index ->
+                        when (navItems[index].route) {
+                            "home" -> { /* Already on home */ }
+                            "reservations" -> {
+                                // TODO: Navigate to reservations when implemented
+                            }
+                            "profile" -> navigator.replaceAll(ProfileScreen())
+                            "admin" -> navigator.push(UserManagementScreen())
                         }
-                    }
+                    },
+                    items = navItems
                 )
             }
         ) { paddingValues ->

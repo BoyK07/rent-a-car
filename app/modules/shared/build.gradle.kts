@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.sqldelight)
 }
 
 group = "dev.koenv.rentmycar.shared"
@@ -58,6 +59,12 @@ kotlin {
             // =====================================
             api(libs.multiplatform.settings)
             api(libs.multiplatform.settings.no.arg)
+            
+            // =====================================
+            // SQLDelight - Database
+            // =====================================
+            api(libs.sqldelight.runtime)
+            api(libs.sqldelight.coroutines)
         }
         
         androidMain.dependencies {
@@ -65,6 +72,11 @@ kotlin {
             // Ktor - Android Engine
             // =====================================
             implementation(libs.ktor.client.okhttp)
+            
+            // =====================================
+            // SQLDelight - Android Driver
+            // =====================================
+            implementation(libs.sqldelight.android.driver)
         }
         
         jvmMain.dependencies {
@@ -72,6 +84,11 @@ kotlin {
             // Ktor - JVM Engine
             // =====================================
             implementation(libs.ktor.client.cio)
+            
+            // =====================================
+            // SQLDelight - JVM Driver
+            // =====================================
+            implementation(libs.sqldelight.jvm.driver)
         }
 
         commonTest.dependencies {
@@ -94,5 +111,13 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
+    }
+}
+
+sqldelight {
+    databases {
+        create("RentMyCarDatabase") {
+            packageName.set("dev.koenv.rentmycar.shared.db")
+        }
     }
 }

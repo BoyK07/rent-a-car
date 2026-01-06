@@ -4,8 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +15,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.admin.UserManagementScreen
 import dev.koenv.rentmycar.app.screens.auth.LoginScreen
+import dev.koenv.rentmycar.app.screens.home.HomeScreen
+import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
+import dev.koenv.rentmycar.app.ui.components.BottomNavItem
 import dev.koenv.rentmycar.app.ui.components.Button
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
@@ -43,17 +45,38 @@ class ProfileScreen : Screen {
         
         val scope = rememberCoroutineScope()
         
-        // Try to get user from auth state first, then fetch from API
+        // Try to get user from auth state first
         LaunchedEffect(Unit) {
             val currentUser = authRepository.currentUser.value
             if (currentUser != null) {
                 user = currentUser
                 isLoading = false
             } else {
-                // If current user not available (shouldn't happen in authenticated state),
-                // we can't fetch without user ID, so show error
-                errorMessage = "User session not found"
-                isLoading = false
+                // Try to restore user from token
+                scope.launch {
+                    authRepository.restoreUserSession().onSuccess { restoredUser ->
+                        user = restoredUser
+                        isLoading = false
+                    }.onFailure {
+                        errorMessage = "Failed to load user profile. Please log in again."
+                        isLoading = false
+                    }
+                }
+            }
+        }
+        
+        val currentUser by authRepository.currentUser.collectAsState()
+        val isAdmin = currentUser?.role?.name == "ADMIN"
+        
+        // Define bottom navigation items
+        val navItems = remember(isAdmin) {
+            buildList {
+                add(BottomNavItem("Home", Icons.Default.Home, "home"))
+                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
+                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
+                if (isAdmin) {
+                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
+                }
             }
         }
         
@@ -83,16 +106,27 @@ class ProfileScreen : Screen {
             topBar = {
                 TopAppBar(
                     title = { Text("Profile") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
                     actions = {
                         IconButton(onClick = { showLogoutDialog = true }) {
                             Icon(Icons.Filled.Logout, contentDescription = "Logout")
                         }
                     }
+                )
+            },
+            bottomBar = {
+                AppBottomNavigationBar(
+                    selectedIndex = 2, // Profile is selected
+                    onItemSelected = { index ->
+                        when (navItems[index].route) {
+                            "home" -> navigator.replaceAll(HomeScreen())
+                            "reservations" -> {
+                                // TODO: Navigate to reservations when implemented
+                            }
+                            "profile" -> { /* Already on profile */ }
+                            "admin" -> navigator.push(UserManagementScreen())
+                        }
+                    },
+                    items = navItems
                 )
             }
         ) { paddingValues ->

@@ -1,0 +1,67 @@
+-- Cars table schema
+CREATE TABLE Car (
+    id TEXT NOT NULL PRIMARY KEY,
+    brand TEXT NOT NULL,
+    model TEXT NOT NULL,
+    category TEXT NOT NULL,
+    fuelType TEXT,
+    ratePerHour TEXT NOT NULL,
+    locationLat REAL,
+    locationLng REAL,
+    isActive INTEGER NOT NULL DEFAULT 1,
+    ownerId TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+-- Indexes for better query performance
+CREATE INDEX car_owner_idx ON Car(ownerId);
+CREATE INDEX car_active_idx ON Car(isActive);
+CREATE INDEX car_category_idx ON Car(category);
+
+-- Get all cars
+selectAll:
+SELECT * FROM Car;
+
+-- Get car by ID
+selectById:
+SELECT * FROM Car WHERE id = ?;
+
+-- Get cars by owner
+selectByOwner:
+SELECT * FROM Car WHERE ownerId = ?;
+
+-- Get active cars
+selectActive:
+SELECT * FROM Car WHERE isActive = 1;
+
+-- Get cars by category
+selectByCategory:
+SELECT * FROM Car WHERE category = ?;
+
+-- Insert or replace car
+insertOrReplace:
+INSERT OR REPLACE INTO Car(id, brand, model, category, fuelType, ratePerHour, locationLat, locationLng, isActive, ownerId, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Update car
+update:
+UPDATE Car 
+SET brand = ?, model = ?, category = ?, fuelType = ?, ratePerHour = ?, locationLat = ?, locationLng = ?, isActive = ?, updatedAt = ?
+WHERE id = ?;
+
+-- Delete car by ID
+deleteById:
+DELETE FROM Car WHERE id = ?;
+
+-- Delete all cars
+deleteAll:
+DELETE FROM Car;
+
+-- Count all cars
+countAll:
+SELECT COUNT(*) FROM Car;
+
+-- Count active cars
+countActive:
+SELECT COUNT(*) FROM Car WHERE isActive = 1;

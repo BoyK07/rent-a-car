@@ -15,6 +15,7 @@ lumoui = "1.2.5"
 voyager = "1.1.0-beta03"
 multiplatform-settings = "1.2.0"
 kotlinx-coroutines = "1.10.2"
+sqldelight = "2.0.2"
 
 # =====================================
 # Server / Backend
@@ -97,6 +98,14 @@ voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", vers
 # =====================================
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
+
+# =====================================
+# SQLDelight - Multiplatform Database
+# =====================================
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-jvm-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 
 # =====================================
 # Ktor - Core Server
@@ -224,3 +233,5 @@ compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMu
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
 lumoui = { id = "com.nomanr.plugin.lumo", version.ref = "lumoui" }
+
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
