@@ -72,23 +72,47 @@ class ApiV1 {
             @Resource("/cost-per-km")
             @Serializable
             class CostPerKm(val parent: Id = Id(id = ""))
+            
+            // Car Photos nested under specific car
+            @Resource("/photos")
+            @Serializable
+            class Photos(val parent: Id = Id(id = "")) {
+                @Resource("/{photoId}")
+                @Serializable
+                class PhotoId(val parent: Photos, val photoId: String)
+                
+                @Resource("/upload")
+                @Serializable
+                class Upload(val parent: Photos)
+            }
+            
+            // Car Availability nested under specific car
+            @Resource("/availability")
+            @Serializable
+            class Availability(val parent: Id = Id(id = "")) {
+                @Resource("/{availabilityId}")
+                @Serializable
+                class AvailabilityId(val parent: Availability, val availabilityId: String)
+            }
         }
     }
     
     // =====================================
-    // Car Photo Resources
+    // Availability Resources (Query endpoint)
     // =====================================
     
-    @Resource("/car-photos")
+    @Resource("/availability")
     @Serializable
-    class CarPhotos(val parent: ApiV1 = ApiV1()) {
-        @Resource("/{id}")
-        @Serializable
-        class Id(val parent: CarPhotos = CarPhotos(), val id: String)
-    }
+    class Availability(
+        val parent: ApiV1 = ApiV1(),
+        val carId: String,
+        val start: String,
+        val end: String
+    )
     
     // =====================================
-    // Car Availability Resources
+    // Car Availability Resources (for client API compatibility)
+    // Server uses nested Cars.Id.Availability resources
     // =====================================
     
     @Resource("/car-availability")
@@ -103,17 +127,17 @@ class ApiV1 {
     }
     
     // =====================================
-    // Availability Resources
+    // Car Photos Resources (for client API compatibility)
+    // Server uses nested Cars.Id.Photos resources
     // =====================================
     
-    @Resource("/availability")
+    @Resource("/car-photos")
     @Serializable
-    class Availability(
-        val parent: ApiV1 = ApiV1(),
-        val carId: String,
-        val start: String,
-        val end: String
-    )
+    class CarPhotos(val parent: ApiV1 = ApiV1()) {
+        @Resource("/{id}")
+        @Serializable
+        class Id(val parent: CarPhotos = CarPhotos(), val id: String)
+    }
     
     // =====================================
     // Car Cost Resources

@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import dev.koenv.rentmycar.app.screens.admin.UserManagementScreen
+import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.screens.auth.LoginScreen
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
@@ -40,10 +40,25 @@ class ProfileScreen : Screen {
         
         var user by remember { mutableStateOf<UserDto?>(null) }
         var isLoading by remember { mutableStateOf(true) }
+        var isRefreshing by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var showLogoutDialog by remember { mutableStateOf(false) }
         
         val scope = rememberCoroutineScope()
+        
+        // Refresh function
+        val refreshProfile = {
+            scope.launch {
+                isRefreshing = true
+                authRepository.restoreUserSession().onSuccess { restoredUser ->
+                    user = restoredUser
+                    isRefreshing = false
+                }.onFailure { error ->
+                    isRefreshing = false
+                    errorMessage = error.message
+                }
+            }
+        }
         
         // Try to get user from auth state first
         LaunchedEffect(Unit) {
@@ -88,8 +103,10 @@ class ProfileScreen : Screen {
                 text = { Text("Are you sure you want to logout?") },
                 confirmButton = {
                     TextButton(onClick = {
-                        authRepository.logout()
-                        navigator.replaceAll(LoginScreen())
+                        scope.launch {
+                            authRepository.logout()
+                            navigator.replaceAll(LoginScreen())
+                        }
                     }) {
                         Text("Logout")
                     }
@@ -104,14 +121,25 @@ class ProfileScreen : Screen {
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Profile") },
-                    actions = {
-                        IconButton(onClick = { showLogoutDialog = true }) {
-                            Icon(Icons.Filled.Logout, contentDescription = "Logout")
+                Column {
+                    TopAppBar(
+                        title = { Text("Profile") },
+                        actions = {
+                            IconButton(
+                                onClick = { refreshProfile() },
+                                enabled = !isRefreshing
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Refresh profile"
+                                )
+                            }
+                            IconButton(onClick = { showLogoutDialog = true }) {
+                                Icon(Icons.Filled.Logout, contentDescription = "Logout")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             },
             bottomBar = {
                 AppBottomNavigationBar(
@@ -119,11 +147,9 @@ class ProfileScreen : Screen {
                     onItemSelected = { index ->
                         when (navItems[index].route) {
                             "home" -> navigator.replaceAll(HomeScreen())
-                            "reservations" -> {
-                                // TODO: Navigate to reservations when implemented
-                            }
+                            "reservations" -> navigator.replaceAll(dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen())
                             "profile" -> { /* Already on profile */ }
-                            "admin" -> navigator.push(UserManagementScreen())
+                            "admin" -> navigator.replaceAll(AdminScreen())
                         }
                     },
                     items = navItems
@@ -161,11 +187,10 @@ class ProfileScreen : Screen {
                     user != null -> {
                         ProfileContent(
                             user = user!!,
-                            viewedCarsCount = appDataStorage.getViewedCars().size,
-                            onLogout = { showLogoutDialog = true },
-                            onNavigateToUserManagement = { 
-                                navigator.push(UserManagementScreen())
-                            }
+                            carsCount = SharedModule.provideCarDao().getAllCars().size,
+                            usersCount = SharedModule.provideUserDao().getAllUsers().size,
+                            reservationsCount = SharedModule.provideReservationDao().getAllReservations().size,
+                            viewedCarsCount = appDataStorage.getViewedCars().size
                         )
                     }
                 }
@@ -177,10 +202,13 @@ class ProfileScreen : Screen {
 @Composable
 private fun ProfileContent(
     user: UserDto,
-    viewedCarsCount: Int,
-    onLogout: () -> Unit,
-    onNavigateToUserManagement: () -> Unit
+    carsCount: Int,
+    usersCount: Int,
+    reservationsCount: Int,
+    viewedCarsCount: Int
 ) {
+    val navigator = LocalNavigator.currentOrThrow
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -191,16 +219,27 @@ private fun ProfileContent(
         // User info card
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = user.name,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = user.name,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = user.email,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                    IconButton(onClick = { navigator.push(EditProfileScreen()) }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile")
+                    }
+                }
             }
         }
         
@@ -246,6 +285,48 @@ private fun ProfileContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Text(text = "Cars Cached:")
+                    Text(
+                        text = carsCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Users Cached:")
+                    Text(
+                        text = usersCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Reservations Cached:")
+                    Text(
+                        text = reservationsCount.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(text = "Cars Viewed:")
                     Text(
                         text = viewedCarsCount.toString(),
@@ -254,62 +335,36 @@ private fun ProfileContent(
                     )
                 }
                 
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Total Cached:",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "${carsCount + usersCount + reservationsCount} items",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "This data is stored locally on your device",
+                    text = "This data is stored locally on your device for offline access",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
         
-        // Admin section (only visible for ADMIN users)
-        if (user.role.name == "ADMIN") {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Admin",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    Button(
-                        onClick = onNavigateToUserManagement,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Manage Users")
-                    }
-                }
-            }
-        }
-        
-        // Account actions
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Account",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Button(
-                    onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Logout")
-                }
-            }
-        }
+        // Account actions card removed - logout is now only in TopAppBar
     }
 }
 

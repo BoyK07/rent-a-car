@@ -13,11 +13,14 @@ import dev.koenv.rentmycar.shared.http.ApiException
 import dev.koenv.rentmycar.shared.resources.ApiV1
 import io.ktor.http.*
 import io.ktor.server.auth.*
+import io.ktor.server.request.*
 import io.ktor.server.resources.get
 import io.ktor.server.resources.delete
+import io.ktor.server.resources.patch
 import io.ktor.server.routing.*
 import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
+import dev.koenv.rentmycar.shared.dto.user.PatchUserRequestDto
 
 object UserRoutes : RouteRegistrar {
     override fun Route.register() {
@@ -53,6 +56,28 @@ object UserRoutes : RouteRegistrar {
                 } else {
                     call.respondError(HttpStatusCode.NotFound, "User not found")
                 }
+            }
+
+            patch<ApiV1.Users.Id> { resource ->
+                call.requireRole(Role.ADMIN)
+                val id = Uuid.parse(resource.id)
+                val patchRequest = call.receive<PatchUserRequestDto>()
+                
+                // Get existing user
+                val existingUser = userService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "User not found")
+                
+                // Apply patches - only update fields that are provided
+                val updatedUser = existingUser.copy(
+                    name = patchRequest.name ?: existingUser.name,
+                    email = patchRequest.email ?: existingUser.email,
+                    role = patchRequest.role ?: existingUser.role
+                )
+                
+                val result = userService.update(id, updatedUser)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "User not found")
+                
+                call.respondSuccess(result.toDto())
             }
         }
     }

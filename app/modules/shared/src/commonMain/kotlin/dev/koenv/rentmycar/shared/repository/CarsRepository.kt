@@ -171,6 +171,8 @@ class CarsRepository(
         // Check database first
         val cachedCar = carDao.getCarById(id)
         if (cachedCar != null) {
+            // Track as viewed even from cache
+            appDataStorage.addViewedCar(id)
             // Start background refresh
             backgroundScope.launch {
                 syncCarInBackground(id)

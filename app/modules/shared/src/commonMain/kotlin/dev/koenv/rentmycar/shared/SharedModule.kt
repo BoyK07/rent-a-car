@@ -17,6 +17,7 @@ import dev.koenv.rentmycar.shared.repository.ReservationRepository
 import dev.koenv.rentmycar.shared.repository.UserRepository
 import dev.koenv.rentmycar.shared.storage.AppDataStorage
 import dev.koenv.rentmycar.shared.storage.AuthTokenStorage
+import dev.koenv.rentmycar.shared.state.FilterState
 import io.ktor.client.*
 
 /**
@@ -26,6 +27,8 @@ import io.ktor.client.*
  * IMPORTANT: Call initialize() with platform context before using repositories.
  */
 object SharedModule {
+    // Persistent filter state (survives navigation)
+    val filterState: FilterState = FilterState()
     // Default base URL - uses localhost for development
     // Configure for production using configure() method or environment detection
     private var baseUrl: String = detectBaseUrl()
@@ -56,6 +59,11 @@ object SharedModule {
     private val carDao: CarDao by lazy { CarDao(databaseManager) }
     private val userDao: UserDao by lazy { UserDao(databaseManager) }
     private val reservationDao: ReservationDao by lazy { ReservationDao(databaseManager) }
+    
+    // Public DAO access for UI layer
+    fun provideCarDao(): CarDao = carDao
+    fun provideUserDao(): UserDao = userDao
+    fun provideReservationDao(): ReservationDao = reservationDao
     
     // Repositories (public access)
     val authRepository: AuthRepository by lazy { AuthRepository(authApi, _authTokenStorage) }

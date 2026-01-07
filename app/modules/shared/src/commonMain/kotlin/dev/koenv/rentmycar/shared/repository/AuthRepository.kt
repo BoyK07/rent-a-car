@@ -130,6 +130,15 @@ class AuthRepository(
     fun isAuthenticated(): Boolean {
         return authState.value == AuthState.Authenticated
     }
+    
+    /**
+     * Updates the current user data after a profile update.
+     * Used when user edits their profile.
+     */
+    fun updateCurrentUser(user: UserDto) {
+        _currentUser.value = user
+        authTokenStorage.saveUserData(json.encodeToString(user))
+    }
 }
 
 /**

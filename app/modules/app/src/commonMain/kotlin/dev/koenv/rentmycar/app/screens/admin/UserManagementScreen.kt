@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,17 +13,24 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.koenv.rentmycar.app.screens.home.HomeScreen
+import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
+import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
+import dev.koenv.rentmycar.app.ui.components.BottomNavItem
 import dev.koenv.rentmycar.app.ui.components.Button
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.shared.SharedModule
+import dev.koenv.rentmycar.shared.domain.enums.Role
+import dev.koenv.rentmycar.shared.dto.user.PatchUserRequestDto
 import dev.koenv.rentmycar.shared.dto.user.UserDto
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
  * Admin screen for managing users.
+ * Allows viewing, editing, and deleting users.
  * Only accessible to users with ADMIN role.
  */
 class UserManagementScreen : Screen {
@@ -40,9 +45,23 @@ class UserManagementScreen : Screen {
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var userToDelete by remember { mutableStateOf<UserDto?>(null) }
+        var userToEdit by remember { mutableStateOf<UserDto?>(null) }
         
         val currentUser by authRepository.currentUser.collectAsState()
+        val isAdmin = currentUser?.role?.name == "ADMIN"
         val scope = rememberCoroutineScope()
+        
+        // Define bottom navigation items
+        val navItems = remember(isAdmin) {
+            buildList {
+                add(BottomNavItem("Home", Icons.Default.Home, "home"))
+                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
+                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
+                if (isAdmin) {
+                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
+                }
+            }
+        }
         
         // Fetch users on screen load
         LaunchedEffect(Unit) {
@@ -97,6 +116,35 @@ class UserManagementScreen : Screen {
             )
         }
         
+        // Edit user dialog
+        if (userToEdit != null) {
+            EditUserDialog(
+                user = userToEdit!!,
+                onDismiss = { userToEdit = null },
+                onSave = { updatedName, updatedEmail, updatedRole ->
+                    val userId = userToEdit?.id
+                    userToEdit = null
+                    
+                    if (userId != null) {
+                        scope.launch {
+                            val patchRequest = PatchUserRequestDto(
+                                name = if (updatedName != userToEdit?.name) updatedName else null,
+                                email = if (updatedEmail != userToEdit?.email) updatedEmail else null,
+                                role = if (updatedRole != userToEdit?.role) updatedRole else null
+                            )
+                            
+                            userRepository.patchUser(userId, patchRequest).onSuccess { updatedUser ->
+                                // Update in list
+                                users = users.map { if (it.id == userId) updatedUser else it }
+                            }.onFailure { error ->
+                                errorMessage = error.message ?: "Failed to update user"
+                            }
+                        }
+                    }
+                }
+            )
+        }
+        
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -106,6 +154,22 @@ class UserManagementScreen : Screen {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
+                )
+            },
+            bottomBar = {
+                AppBottomNavigationBar(
+                    selectedIndex = 3, // Admin is selected
+                    onItemSelected = { index ->
+                        when (navItems[index].route) {
+                            "home" -> navigator.replaceAll(HomeScreen())
+                            "reservations" -> {
+                                // TODO: Navigate to reservations when implemented
+                            }
+                            "profile" -> navigator.replaceAll(ProfileScreen())
+                            "admin" -> navigator.pop() // Go back to admin dashboard
+                        }
+                    },
+                    items = navItems
                 )
             }
         ) { paddingValues ->
@@ -177,7 +241,8 @@ class UserManagementScreen : Screen {
                                 UserListItem(
                                     user = user,
                                     isCurrentUser = user.id == currentUser?.id,
-                                    onDelete = { userToDelete = user }
+                                    onDelete = { userToDelete = user },
+                                    onEdit = { userToEdit = user }
                                 )
                             }
                         }
@@ -192,7 +257,8 @@ class UserManagementScreen : Screen {
 private fun UserListItem(
     user: UserDto,
     isCurrentUser: Boolean,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -261,19 +327,119 @@ private fun UserListItem(
                 }
             }
             
-            // Don't allow deleting yourself
-            if (!isCurrentUser) {
+            // Action buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Edit button
                 IconButton(
-                    onClick = onDelete,
+                    onClick = onEdit,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete user")
+                    Icon(Icons.Default.Edit, contentDescription = "Edit user")
+                }
+                
+                // Don't allow deleting yourself
+                if (!isCurrentUser) {
+                    IconButton(
+                        onClick = onDelete,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete user")
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * Dialog for editing user information.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditUserDialog(
+    user: UserDto,
+    onDismiss: () -> Unit,
+    onSave: (name: String, email: String, role: Role) -> Unit
+) {
+    var name by remember { mutableStateOf(user.name) }
+    var email by remember { mutableStateOf(user.email) }
+    var selectedRole by remember { mutableStateOf(user.role) }
+    var expandedRoleMenu by remember { mutableStateOf(false) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit User") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Role dropdown
+                ExposedDropdownMenuBox(
+                    expanded = expandedRoleMenu,
+                    onExpandedChange = { expandedRoleMenu = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedRole.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Role") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRoleMenu) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    
+                    ExposedDropdownMenu(
+                        expanded = expandedRoleMenu,
+                        onDismissRequest = { expandedRoleMenu = false }
+                    ) {
+                        Role.entries.forEach { role ->
+                            DropdownMenuItem(
+                                text = { Text(role.name) },
+                                onClick = {
+                                    selectedRole = role
+                                    expandedRoleMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(name, email, selectedRole) },
+                enabled = name.isNotBlank() && email.isNotBlank()
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

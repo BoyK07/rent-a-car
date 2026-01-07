@@ -5,6 +5,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.shared.SharedModule
@@ -23,6 +26,7 @@ import kotlin.uuid.Uuid
 /**
  * Car detail screen displaying detailed information about a specific car.
  * Automatically marks the car as "viewed" in local storage.
+ * Shows edit and delete actions for car owners (DRIVER/ADMIN roles).
  */
 data class CarDetailScreen(
     val carId: Uuid
@@ -32,10 +36,21 @@ data class CarDetailScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
+        val authRepository = remember { SharedModule.authRepository }
         
         var car by remember { mutableStateOf<CarDto?>(null) }
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        var showDeleteDialog by remember { mutableStateOf(false) }
+        
+        val currentUser by authRepository.currentUser.collectAsState()
+        val canEdit = remember(currentUser, car) {
+            val user = currentUser ?: return@remember false
+            val carData = car ?: return@remember false
+            val role = user.role.name
+            // Admin can edit any car, Driver can edit their own cars
+            role == "ADMIN" || (role == "DRIVER" && carData.ownerId == user.id)
+        }
         
         val scope = rememberCoroutineScope()
         
@@ -52,6 +67,41 @@ data class CarDetailScreen(
             }
         }
         
+        // Delete confirmation dialog
+        if (showDeleteDialog && car != null) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Car") },
+                text = { 
+                    Text(
+                        "Are you sure you want to delete '${car?.brand} ${car?.model}'? " +
+                        "This action cannot be undone."
+                    ) 
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            scope.launch {
+                                carsRepository.deleteCar(carId).onSuccess {
+                                    navigator.pop()
+                                }.onFailure { error ->
+                                    errorMessage = error.message ?: "Failed to delete car"
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+        
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -59,6 +109,18 @@ data class CarDetailScreen(
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        if (canEdit && car != null) {
+                            IconButton(onClick = { 
+                                navigator.push(EditCarScreen(carId))
+                            }) {
+                                Icon(Icons.Filled.Edit, contentDescription = "Edit Car")
+                            }
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Delete Car")
+                            }
                         }
                     }
                 )
@@ -140,7 +202,7 @@ private fun CarDetailContent(car: CarDto) {
                 ) {
                     Text(text = "Rate per hour:")
                     Text(
-                        text = "${car.ratePerHour}",
+                        text = "\u20ac${car.ratePerHour.roundSignificand(DecimalMode.US_CURRENCY).toPlainString()}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )

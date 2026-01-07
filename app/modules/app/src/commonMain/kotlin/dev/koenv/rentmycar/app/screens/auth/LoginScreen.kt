@@ -48,14 +48,16 @@ class LoginScreen : Screen {
             }
         }
         
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+        Scaffold { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
             Text(
                 text = "Rent My Car",
                 style = MaterialTheme.typography.headlineLarge
@@ -125,7 +127,8 @@ class LoginScreen : Screen {
                         )
                         
                         result.onFailure { error ->
-                            errorMessage = error.message ?: "Login failed"
+                            val message = error.message ?: "Login failed"
+                            errorMessage = message
                             isLoading = false
                         }
                     }
@@ -153,6 +156,7 @@ class LoginScreen : Screen {
                 Text("Don't have an account? Register")
             }
         }
+    }
     }
 }
 

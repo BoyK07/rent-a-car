@@ -14,9 +14,11 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.ionspin.kotlin.bignum.decimal.DecimalMode
+import dev.koenv.rentmycar.app.screens.car.AddCarScreen
 import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
-import dev.koenv.rentmycar.app.screens.admin.UserManagementScreen
+import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
 import dev.koenv.rentmycar.app.ui.components.BottomNavItem
@@ -27,9 +29,10 @@ import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.car.CarDto
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import kotlin.math.sqrt
 
 /**
- * Home screen displaying a list of available cars.
+ * Home screen displaying a list of available cars with filtering options.
  * Main entry point after authentication.
  */
 class HomeScreen : Screen {
@@ -39,15 +42,59 @@ class HomeScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
         val authRepository = remember { SharedModule.authRepository }
+        val filterState = remember { SharedModule.filterState }
         
         var cars by remember { mutableStateOf<List<CarDto>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
+        var isRefreshing by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        
+        // Use persistent filter states from SharedModule
+        var filtersExpanded by remember { mutableStateOf(filterState.filtersExpanded) }
+        var showAvailableOnly by remember { mutableStateOf(filterState.showAvailableOnly) }
+        var searchNearby by remember { mutableStateOf(filterState.searchNearby) }
+        var userLat by remember { mutableStateOf(52.3676) } // Default: Amsterdam
+        var userLng by remember { mutableStateOf(4.9041) }
+        var maxDistance by remember { mutableStateOf(filterState.maxDistance) }
+        var brandFilter by remember { mutableStateOf(filterState.brandFilter) }
+        var selectedCategories by remember { mutableStateOf(filterState.selectedCategories) }
+        var minRate by remember { mutableStateOf(filterState.minRate) }
+        var maxRate by remember { mutableStateOf(filterState.maxRate) }
+        var sortBy by remember { mutableStateOf(filterState.sortBy) }
+        
+        // Save filter states when they change
+        LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
+            filterState.filtersExpanded = filtersExpanded
+            filterState.showAvailableOnly = showAvailableOnly
+            filterState.searchNearby = searchNearby
+            filterState.maxDistance = maxDistance
+            filterState.brandFilter = brandFilter
+            filterState.selectedCategories = selectedCategories
+            filterState.minRate = minRate
+            filterState.maxRate = maxRate
+            filterState.sortBy = sortBy
+        }
         
         val currentUser by authRepository.currentUser.collectAsState()
         val isAdmin = currentUser?.role?.name == "ADMIN"
+        val isDriver = currentUser?.role?.name == "DRIVER"
+        val canAddCar = isAdmin || isDriver
         
         val scope = rememberCoroutineScope()
+        
+        // Refresh function
+        val refreshCars = {
+            scope.launch {
+                isRefreshing = true
+                carsRepository.getCars(forceRefresh = true).onSuccess { carsList ->
+                    cars = carsList
+                    isRefreshing = false
+                }.onFailure { error ->
+                    isRefreshing = false
+                    errorMessage = error.message
+                }
+            }
+        }
         
         // Fetch cars on screen load
         LaunchedEffect(Unit) {
@@ -59,6 +106,61 @@ class HomeScreen : Screen {
                     errorMessage = error.message ?: "Failed to load cars"
                     isLoading = false
                 }
+            }
+        }
+        
+        // Filter cars based on criteria
+        val filteredCars = remember(cars, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
+            var result = cars
+            
+            // Filter by availability
+            if (showAvailableOnly) {
+                result = result.filter { it.isActive }
+            }
+            
+            // Filter by brand
+            if (brandFilter.isNotBlank()) {
+                result = result.filter { car ->
+                    car.brand.contains(brandFilter, ignoreCase = true)
+                }
+            }
+            
+            // Filter by category
+            if (selectedCategories.isNotEmpty()) {
+                result = result.filter { car ->
+                    car.category?.label in selectedCategories
+                }
+            }
+            
+            // Filter by rate range
+            result = result.filter { car ->
+                car.ratePerHour >= minRate && car.ratePerHour <= maxRate
+            }
+            
+            // Filter by distance (nearby search)
+            if (searchNearby) {
+                result = result.filter { car ->
+                    val distance = calculateDistance(
+                        userLat, userLng,
+                        car.locationLat, car.locationLng
+                    )
+                    distance <= maxDistance
+                }
+            }
+            
+            // Sort results
+            when (sortBy) {
+                "Price (Low to High)" -> result.sortedBy { it.ratePerHour }
+                "Price (High to Low)" -> result.sortedByDescending { it.ratePerHour }
+                "Distance" -> {
+                    if (searchNearby) {
+                        result.sortedBy { car ->
+                            calculateDistance(userLat, userLng, car.locationLat, car.locationLng)
+                        }
+                    } else result
+                }
+                "Brand" -> result.sortedBy { it.brand }
+                else -> result
             }
         }
         
@@ -76,9 +178,26 @@ class HomeScreen : Screen {
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Available Cars") }
-                )
+                Column {
+                    TopAppBar(
+                        title = { Text("Available Cars") },
+                        actions = {
+                            IconButton(
+                                onClick = { refreshCars() },
+                                enabled = !isRefreshing
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Refresh cars"
+                                )
+                            }
+                        }
+                    )
+                    // LinearProgressIndicator when refreshing
+                    if (isRefreshing) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                }
             },
             bottomBar = {
                 AppBottomNavigationBar(
@@ -86,74 +205,300 @@ class HomeScreen : Screen {
                     onItemSelected = { index ->
                         when (navItems[index].route) {
                             "home" -> { /* Already on home */ }
-                            "reservations" -> {
-                                // TODO: Navigate to reservations when implemented
-                            }
+                            "reservations" -> navigator.replaceAll(dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen())
                             "profile" -> navigator.replaceAll(ProfileScreen())
-                            "admin" -> navigator.push(UserManagementScreen())
+                            "admin" -> navigator.replaceAll(AdminScreen())
                         }
                     },
                     items = navItems
                 )
+            },
+            floatingActionButton = {
+                if (canAddCar) {
+                    FloatingActionButton(
+                        onClick = { navigator.push(AddCarScreen()) }
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Car")
+                    }
+                }
             }
         ) { paddingValues ->
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                when {
-                    isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                    errorMessage != null -> {
-                        Column(
+                // Collapsible Filter section
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        // Filter header with expand/collapse
+                        Row(
                             modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .fillMaxWidth()
+                                .clickable { filtersExpanded = !filtersExpanded },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                text = "Filters",
+                                style = MaterialTheme.typography.titleMedium
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = {
-                                isLoading = true
-                                errorMessage = null
-                                scope.launch {
-                                    carsRepository.getCars().onSuccess { carsList ->
-                                        cars = carsList
-                                        isLoading = false
-                                    }.onFailure { error ->
-                                        errorMessage = error.message ?: "Failed to load cars"
-                                        isLoading = false
+                            Icon(
+                                imageVector = if (filtersExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (filtersExpanded) "Collapse filters" else "Expand filters"
+                            )
+                        }
+                        
+                        if (filtersExpanded) {
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
+                            
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                // Available only filter
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Show available cars only")
+                                    Switch(
+                                        checked = showAvailableOnly,
+                                        onCheckedChange = { showAvailableOnly = it }
+                                    )
+                                }
+                                
+                                Divider()
+                                
+                                // Brand filter
+                                OutlinedTextField(
+                                    value = brandFilter,
+                                    onValueChange = { brandFilter = it },
+                                    label = { Text("Brand") },
+                                    placeholder = { Text("e.g., Tesla, BMW") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                                
+                                Divider()
+                                
+                                // Category filter
+                                Column {
+                                    Text(
+                                        text = "Category",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf("ICE", "BEV", "FCEV").forEach { category ->
+                                            FilterChip(
+                                                selected = category in selectedCategories,
+                                                onClick = {
+                                                    selectedCategories = if (category in selectedCategories) {
+                                                        selectedCategories - category
+                                                    } else {
+                                                        selectedCategories + category
+                                                    }
+                                                },
+                                                label = { Text(category) }
+                                            )
+                                        }
                                     }
                                 }
-                            }) {
-                                Text("Retry")
+                                
+                                Divider()
+                                
+                                // Rate range filter
+                                Column {
+                                    Text(
+                                        text = "Rate per hour: €${minRate.toInt()} - €${maxRate.toInt()}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("€${minRate.toInt()}", style = MaterialTheme.typography.bodySmall)
+                                        androidx.compose.material3.RangeSlider(
+                                            value = minRate.toFloat()..maxRate.toFloat(),
+                                            onValueChange = { range ->
+                                                minRate = range.start.toDouble()
+                                                maxRate = range.endInclusive.toDouble()
+                                            },
+                                            valueRange = 0f..100f,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text("€${maxRate.toInt()}", style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                
+                                Divider()
+                                
+                                // Nearby search filter
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Nearby search")
+                                        Text(
+                                            "Within $maxDistance km",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    Switch(
+                                        checked = searchNearby,
+                                        onCheckedChange = { searchNearby = it }
+                                    )
+                                }
+                                
+                                if (searchNearby) {
+                                    Slider(
+                                        value = maxDistance.toFloat(),
+                                        onValueChange = { maxDistance = it.toInt() },
+                                        valueRange = 5f..100f,
+                                        steps = 18,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                
+                                Divider()
+                                
+                                // Sort options
+                                Column {
+                                    Text(
+                                        text = "Sort by",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    var expandedSortMenu by remember { mutableStateOf(false) }
+                                    OutlinedButton(
+                                        onClick = { expandedSortMenu = true },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(sortBy)
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Sort options")
+                                    }
+                                    DropdownMenu(
+                                        expanded = expandedSortMenu,
+                                        onDismissRequest = { expandedSortMenu = false }
+                                    ) {
+                                        listOf(
+                                            "Price (Low to High)",
+                                            "Price (High to Low)",
+                                            "Distance",
+                                            "Brand"
+                                        ).forEach { option ->
+                                            DropdownMenuItem(
+                                                text = { Text(option) },
+                                                onClick = {
+                                                    sortBy = option
+                                                    expandedSortMenu = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                    cars.isEmpty() -> {
-                        Text(
-                            text = "No cars available",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(cars) { car ->
-                                CarListItem(
-                                    car = car,
-                                    onClick = { navigator.push(CarDetailScreen(car.id)) }
+                }
+                
+                // Results count
+                Text(
+                    text = "${filteredCars.size} car${if (filteredCars.size != 1) "s" else ""} found",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+                
+                // Content area
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                ) {
+                    when {
+                        isLoading -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                        errorMessage != null -> {
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = errorMessage ?: "",
+                                    color = MaterialTheme.colorScheme.error
                                 )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(onClick = {
+                                    isLoading = true
+                                    errorMessage = null
+                                    scope.launch {
+                                        carsRepository.getCars().onSuccess { carsList ->
+                                            cars = carsList
+                                            isLoading = false
+                                        }.onFailure { error ->
+                                            errorMessage = error.message ?: "Failed to load cars"
+                                            isLoading = false
+                                        }
+                                    }
+                                }) {
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                        filteredCars.isEmpty() -> {
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = if (cars.isEmpty()) "No cars available" else "No cars match your filters",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                if (cars.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Try adjusting your filters",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(filteredCars) { car ->
+                                    CarListItem(
+                                        car = car,
+                                        userLat = userLat,
+                                        userLng = userLng,
+                                        showDistance = searchNearby,
+                                        onClick = { navigator.push(CarDetailScreen(car.id)) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -163,11 +508,30 @@ class HomeScreen : Screen {
     }
 }
 
+// Helper function to calculate distance between two coordinates (Haversine formula)
+private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val earthRadiusKm = 6371.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    val c = 2 * Math.atan2(sqrt(a), sqrt(1 - a))
+    return earthRadiusKm * c
+}
+
 @Composable
 private fun CarListItem(
     car: CarDto,
+    userLat: Double,
+    userLng: Double,
+    showDistance: Boolean,
     onClick: () -> Unit
 ) {
+    val distance = if (showDistance) {
+        calculateDistance(userLat, userLng, car.locationLat, car.locationLng)
+    } else null
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,15 +552,32 @@ private fun CarListItem(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = car.category.name,
+                        text = car.category.label,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                    if (distance != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "%.1f km away".format(distance),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${car.ratePerHour}/hr",
+                        text = "\u20ac${car.ratePerHour.roundSignificand(DecimalMode.US_CURRENCY).toPlainString()}/hr",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )

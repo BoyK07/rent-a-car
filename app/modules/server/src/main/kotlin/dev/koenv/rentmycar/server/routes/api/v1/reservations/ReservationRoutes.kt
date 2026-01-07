@@ -19,8 +19,15 @@ import dev.koenv.rentmycar.shared.dto.reservation.ReservationQuoteRequestDto
 import dev.koenv.rentmycar.shared.dto.reservation.ReservationQuoteResponseDto
 import dev.koenv.rentmycar.shared.dto.reservation.UpdateReservationRequestDto
 import dev.koenv.rentmycar.shared.http.ApiException
+import dev.koenv.rentmycar.shared.resources.ApiV1
 import io.ktor.http.*
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.callid.*
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
+import io.ktor.server.resources.put
+import io.ktor.server.resources.patch
+import io.ktor.server.resources.delete
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.datetime.TimeZone
@@ -35,266 +42,375 @@ object ReservationRoutes : RouteRegistrar {
         val drivingSessionService by inject<DrivingSessionService>()
         val carService by inject<CarService>()
 
-        route("/reservations") {
+        // POST /api/v1/reservations/quote - Public quote endpoint
+        post<ApiV1.Reservations.Quote> {
+            val request = call.requireBodyOrFail<ReservationQuoteRequestDto>()
 
-            // Public quote endpoint - get price estimate before booking
-            post("/quote") {
-                val request =
-                    call.requireBodyOrFail<ReservationQuoteRequestDto>()
+            val (price, duration, car) = reservationService.getQuote(
+                request.carId,
+                request.startTime,
+                request.endTime
+            )
 
-                val (price, duration, car) = reservationService.getQuote(
-                    request.carId,
-                    request.startTime,
-                    request.endTime
-                )
+            val carId = car.id
+            require(carId != null) { "Car ID must not be null" }
 
-                val carId = car.id
-                require(carId != null) { "Car ID must not be null" }
+            val response = ReservationQuoteResponseDto(
+                carId = carId,
+                carBrand = car.brand,
+                carModel = car.model,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                durationHours = duration,
+                ratePerHour = car.ratePerHour,
+                totalPrice = price
+            )
 
-                val response = ReservationQuoteResponseDto(
-                    carId = carId,
-                    carBrand = car.brand,
-                    carModel = car.model,
-                    startTime = request.startTime,
-                    endTime = request.endTime,
-                    durationHours = duration,
-                    ratePerHour = car.ratePerHour,
-                    totalPrice = price
-                )
+            call.respondSuccess(response)
+        }
 
-                call.respond(HttpStatusCode.OK, response)
+        authenticate("auth-jwt") {
+            // GET /api/v1/reservations - List with filters
+            get<ApiV1.Reservations> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+
+                val renterId = resource.renterId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+                val carId = resource.carId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+                val status = resource.status?.let {
+                    runCatching { ReservationStatus.valueOf(it.uppercase()) }.getOrNull()
+                }
+                val startDateTime = resource.start?.let { runCatching { kotlinx.datetime.LocalDateTime.parse(it) }.getOrNull() }
+                val endDateTime = resource.end?.let { runCatching { kotlinx.datetime.LocalDateTime.parse(it) }.getOrNull() }
+
+                val all = reservationService.getAll()
+                val filtered = all.asSequence()
+                    .filter { r -> renterId == null || r.renterId == renterId }
+                    .filter { r -> carId == null || r.carId == carId }
+                    .filter { r -> status == null || r.status == status }
+                    .filter { r ->
+                        startDateTime == null || r.endTime >= startDateTime
+                    }
+                    .filter { r ->
+                        endDateTime == null || r.startTime <= endDateTime
+                    }
+                    // Non-admin users can only see their own reservations
+                    .filter { r -> role == Role.ADMIN || r.renterId == userId }
+                    .toList()
+
+                call.respondSuccess(filtered.map { it.toDto() })
             }
 
-            authenticate("auth-jwt") {
-                // List with filters
-                get {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
+            // GET /api/v1/reservations/active - Get active reservations
+            get<ApiV1.Reservations.Active> {
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+                val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+                val active = reservationService.findActiveReservations(now)
 
-                    val renterId =
-                        call.request.queryParameters["renterId"]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-                    val carId =
-                        call.request.queryParameters["carId"]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-                    val status = call.request.queryParameters["status"]?.let {
-                        runCatching { ReservationStatus.valueOf(it.uppercase()) }.getOrNull()
-                    }
-                    val startDateTime = call.requireLocalDateTimeParamOrNull("start")
-                    val endDateTime = call.requireLocalDateTimeParamOrNull("end")
-
-                    val all = reservationService.getAll()
-                    val filtered = all.asSequence()
-                        .filter { r -> renterId == null || r.renterId == renterId }
-                        .filter { r -> carId == null || r.carId == carId }
-                        .filter { r -> status == null || r.status == status }
-                        .filter { r ->
-                            startDateTime == null || r.endTime >= startDateTime
-                        }
-                        .filter { r ->
-                            endDateTime == null || r.startTime <= endDateTime
-                        }
-                        // Non-admin users can only see their own reservations
-                        .filter { r -> role == Role.ADMIN || r.renterId == userId }
-                        .toList()
-
-                    call.respond(filtered.map { it.toDto() })
+                // Non-admin users can only see their own active reservations
+                val filtered = if (role == Role.ADMIN) {
+                    active
+                } else {
+                    active.filter { it.renterId == userId }
                 }
 
-                get("/{id}") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
-                    val reservation = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+                call.respondSuccess(filtered.map { it.toDto() })
+            }
 
-                    // Non-admin users can only view their own reservations
-                    if (role != Role.ADMIN && reservation.renterId != userId) {
-                        throw ApiException(
-                            HttpStatusCode.Forbidden,
-                            message = "You are not authorized to view this reservation"
-                        )
-                    }
-
-                    call.respond(reservation.toDto())
-                }
-
-                post {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val renterId = principal.getUserId()
-                    val req = call.requireBodyOrFail<CreateReservationRequestDto>()
-                    val created = reservationService.create(req.toEntity(renterId))
-                    call.respond(HttpStatusCode.Created, created.toDto())
-                }
-
-                put("/{id}") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val renterId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
-                    val existing = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
-
-                    verifyOwnership(role, renterId, existing.renterId, "reservation")
-
-                    val req = call.requireBodyOrFail<UpdateReservationRequestDto>()
-                    val updated = reservationService.update(
-                        id,
-                        req.toEntity(id, existing.renterId, existing.priceTotal, existing.pointsAwarded)
+            // GET /api/v1/reservations/{id} - Get specific reservation
+            get<ApiV1.Reservations.Id> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.id)
+                } catch (_: IllegalArgumentException) {
+                    return@get call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
                     )
-                    if (updated == null) call.respond(HttpStatusCode.NotFound) else call.respond(updated.toDto())
+                }
+                
+                val reservation = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                // Non-admin users can only view their own reservations
+                if (role != Role.ADMIN && reservation.renterId != userId) {
+                    throw ApiException(
+                        HttpStatusCode.Forbidden,
+                        message = "You are not authorized to view this reservation"
+                    )
                 }
 
-                patch("/{id}") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val renterId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
-                    val existing = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+                call.respondSuccess(reservation.toDto())
+            }
 
-                    verifyOwnership(role, renterId, existing.renterId, "reservation")
+            // POST /api/v1/reservations - Create reservation
+            post<ApiV1.Reservations> {
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val renterId = principal.getUserId()
+                val req = call.requireBodyOrFail<CreateReservationRequestDto>()
+                val created = reservationService.create(req.toEntity(renterId))
+                call.respondCreated(created.toDto())
+            }
 
-                    val req = call.requireBodyOrFail<PatchReservationRequestDto>()
-                    val patched = req.applyPatch(existing)
-                    val saved = reservationService.update(id, patched)
-                    if (saved == null) call.respond(HttpStatusCode.NotFound) else call.respond(saved.toDto())
+            // PUT /api/v1/reservations/{id} - Replace reservation
+            put<ApiV1.Reservations.Id> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val renterId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.id)
+                } catch (_: IllegalArgumentException) {
+                    return@put call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
+                }
+                
+                val existing = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                verifyOwnership(role, renterId, existing.renterId, "reservation")
+
+                val req = call.requireBodyOrFail<UpdateReservationRequestDto>()
+                val updated = reservationService.update(
+                    id,
+                    req.toEntity(id, existing.renterId, existing.priceTotal, existing.pointsAwarded)
+                )
+                if (updated == null) {
+                    call.respondError(HttpStatusCode.NotFound, "Reservation not found")
+                } else {
+                    call.respondSuccess(updated.toDto())
+                }
+            }
+
+            // PATCH /api/v1/reservations/{id} - Partially update reservation
+            patch<ApiV1.Reservations.Id> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val renterId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.id)
+                } catch (_: IllegalArgumentException) {
+                    return@patch call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
+                }
+                
+                val existing = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                verifyOwnership(role, renterId, existing.renterId, "reservation")
+
+                val req = call.requireBodyOrFail<PatchReservationRequestDto>()
+                val patched = req.applyPatch(existing)
+                val saved = reservationService.update(id, patched)
+                if (saved == null) {
+                    call.respondError(HttpStatusCode.NotFound, "Reservation not found")
+                } else {
+                    call.respondSuccess(saved.toDto())
+                }
+            }
+
+            // DELETE /api/v1/reservations/{id} - Delete reservation
+            delete<ApiV1.Reservations.Id> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                val renterId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.id)
+                } catch (_: IllegalArgumentException) {
+                    return@delete call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
+                }
+                
+                val existing = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                verifyOwnership(role, renterId, existing.renterId, "reservation")
+
+                if (reservationService.delete(id)) {
+                    call.respondSuccess(Unit, HttpStatusCode.NoContent)
+                } else {
+                    call.respondError(HttpStatusCode.NotFound, "Reservation not found")
+                }
+            }
+
+            // POST /api/v1/reservations/{id}/cancel - Cancel reservation
+            post<ApiV1.Reservations.Id.Cancel> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val renterId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.parent.id)
+                } catch (_: IllegalArgumentException) {
+                    return@post call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
+                }
+                
+                val existing = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                verifyOwnership(role, renterId, existing.renterId, "reservation")
+
+                if (reservationService.cancel(id)) {
+                    call.respondSuccess(Unit, HttpStatusCode.NoContent)
+                } else {
+                    call.respondError(HttpStatusCode.NotFound, "Reservation not found")
+                }
+            }
+
+            // POST /api/v1/reservations/{id}/confirm - Confirm reservation
+            post<ApiV1.Reservations.Id.Confirm> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.parent.id)
+                } catch (_: IllegalArgumentException) {
+                    return@post call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
                 }
 
-                delete("/{id}") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
-                    val renterId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
-                    val existing = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+                val reservation = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                    verifyOwnership(role, renterId, existing.renterId, "reservation")
-
-                    if (reservationService.delete(id)) {
-                        call.respond(HttpStatusCode.NoContent)
-                    } else {
-                        call.respond(HttpStatusCode.NotFound)
-                    }
+                // Only car owner or admin can confirm
+                val car = carService.getById(reservation.carId)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
+                if (role != Role.ADMIN && car.ownerId != userId) {
+                    throw ApiException(
+                        HttpStatusCode.Forbidden,
+                        message = "Only car owner can confirm reservations"
+                    )
                 }
 
-                post("/{id}/cancel") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val renterId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
-                    val existing = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+                val confirmed = reservationService.confirmReservation(id)
+                call.respondSuccess(confirmed.toDto())
+            }
 
-                    verifyOwnership(role, renterId, existing.renterId, "reservation")
-
-                    if (reservationService.cancel(id)) {
-                        call.respond(HttpStatusCode.NoContent)
-                    } else {
-                        call.respond(HttpStatusCode.NotFound)
-                    }
+            // POST /api/v1/reservations/{id}/complete - Complete reservation
+            post<ApiV1.Reservations.Id.Complete> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.parent.id)
+                } catch (_: IllegalArgumentException) {
+                    return@post call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
                 }
 
-                post("/{id}/confirm") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
+                val reservation = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                    val reservation = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+                // Only renter or admin can complete
+                verifyOwnership(role, userId, reservation.renterId, "reservation")
 
-                    // Only car owner or admin can confirm
-                    val car = carService.getById(reservation.carId)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Car not found")
-                    if (role != Role.ADMIN && car.ownerId != userId) {
-                        throw ApiException(
-                            HttpStatusCode.Forbidden,
-                            message = "Only car owner can confirm reservations"
-                        )
-                    }
+                val completed = reservationService.completeReservation(id)
+                call.respondSuccess(completed.toDto())
+            }
 
-                    val confirmed = reservationService.confirmReservation(id)
-                    call.respond(confirmed.toDto())
+            // GET /api/v1/reservations/{id}/driving-sessions - Get driving sessions
+            get<ApiV1.Reservations.Id.DrivingSessions> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+                
+                val id = try {
+                    Uuid.parse(resource.parent.id)
+                } catch (_: IllegalArgumentException) {
+                    return@get call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
                 }
 
-                post("/{id}/complete") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
+                val reservation = reservationService.getById(id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                    val reservation = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
-
-                    // Only renter or admin can complete
-                    verifyOwnership(role, userId, reservation.renterId, "reservation")
-
-                    val completed = reservationService.completeReservation(id)
-                    call.respond(completed.toDto())
+                // Non-admin users can only view driving sessions for their own reservations
+                if (role != Role.ADMIN && reservation.renterId != userId) {
+                    throw ApiException(
+                        HttpStatusCode.Forbidden,
+                        message = "You can only view driving sessions for your own reservations"
+                    )
                 }
 
-                get("/active") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
-                    val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
-                    val active = reservationService.findActiveReservations(now)
+                val sessions = drivingSessionService.getByReservationId(id)
+                call.respondSuccess(sessions.map { it.toDto(drivingSessionService) })
+            }
 
-                    // Non-admin users can only see their own active reservations
-                    val filtered = if (role == Role.ADMIN) {
-                        active
-                    } else {
-                        active.filter { it.renterId == userId }
-                    }
+            // POST /api/v1/reservations/{id}/driving-sessions - Create driving session
+            post<ApiV1.Reservations.Id.DrivingSessions> { resource ->
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                
+                val reservationId = try {
+                    Uuid.parse(resource.parent.id)
+                } catch (_: IllegalArgumentException) {
+                    return@post call.respondError(
+                        HttpStatusCode.BadRequest,
+                        "Invalid reservation ID format",
+                        "INVALID_RESERVATION_ID",
+                        call.callId
+                    )
+                }
+                
+                val request = call.requireBodyOrFail<CreateDrivingSessionRequestDto>()
 
-                    call.respond(filtered.map { it.toDto() })
+                // Validate reservation exists and user is the renter
+                val reservation = reservationService.getById(reservationId)
+                    ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
+
+                // Only the renter can create sessions for their reservation
+                if (reservation.renterId != userId) {
+                    throw ApiException(
+                        HttpStatusCode.Forbidden,
+                        message = "You can only create sessions for your own reservations"
+                    )
                 }
 
-                get("/{id}/driving-sessions") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val role = principal.getRole()
-                    val id = call.requireUuidParamOrFail("id")
+                val session = request.toEntity(reservationId, userId)
+                val created = drivingSessionService.create(session)
 
-                    val reservation = reservationService.getById(id)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
-
-                    // Non-admin users can only view driving sessions for their own reservations
-                    if (role != Role.ADMIN && reservation.renterId != userId) {
-                        throw ApiException(
-                            HttpStatusCode.Forbidden,
-                            message = "You can only view driving sessions for your own reservations"
-                        )
-                    }
-
-                    val sessions = drivingSessionService.getByReservationId(id)
-                    call.respond(sessions.map { it.toDto(drivingSessionService) })
-                }
-
-                post("/{id}/driving-sessions") {
-                    val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                    val userId = principal.getUserId()
-                    val reservationId = call.requireUuidParamOrFail("id")
-                    val request = call.requireBodyOrFail<CreateDrivingSessionRequestDto>()
-
-                    // Validate reservation exists and user is the renter
-                    val reservation = reservationService.getById(reservationId)
-                        ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
-
-                    // Only the renter can create sessions for their reservation
-                    if (reservation.renterId != userId) {
-                        throw ApiException(
-                            HttpStatusCode.Forbidden,
-                            message = "You can only create sessions for your own reservations"
-                        )
-                    }
-
-                    val session = request.toEntity(reservationId, userId)
-                    val created = drivingSessionService.create(session)
-
-                    call.respond(HttpStatusCode.Created, created.toDto(drivingSessionService))
-                }
+                call.respondCreated(created.toDto(drivingSessionService))
             }
         }
     }
