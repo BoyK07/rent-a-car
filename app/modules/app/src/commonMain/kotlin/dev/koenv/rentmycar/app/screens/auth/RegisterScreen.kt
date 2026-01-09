@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +20,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.ButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
+import dev.koenv.rentmycar.app.ui.components.Switch
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.Role
@@ -63,15 +69,15 @@ class RegisterScreen : Screen {
         ) {
             Text(
                 text = "Create Account",
-                style = MaterialTheme.typography.headlineLarge
+                style = AppTheme.typography.headlineLarge
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
                 text = "Join Rent My Car",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                style = AppTheme.typography.bodyLarge,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -83,7 +89,14 @@ class RegisterScreen : Screen {
                 label = { Text("Full Name") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -96,7 +109,14 @@ class RegisterScreen : Screen {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -110,7 +130,14 @@ class RegisterScreen : Screen {
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -124,7 +151,14 @@ class RegisterScreen : Screen {
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -132,7 +166,7 @@ class RegisterScreen : Screen {
             // Role selection (optional)
             Text(
                 text = "Select Role (Optional)",
-                style = MaterialTheme.typography.titleMedium
+                style = AppTheme.typography.titleMedium
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -163,8 +197,8 @@ class RegisterScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    color = AppTheme.colors.error,
+                    style = AppTheme.typography.bodySmall
                 )
             }
             
@@ -214,7 +248,7 @@ class RegisterScreen : Screen {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = AppTheme.colors.onPrimary
                     )
                 } else {
                     Text("Register")
@@ -224,9 +258,10 @@ class RegisterScreen : Screen {
             Spacer(modifier = Modifier.height(16.dp))
             
             // Navigate to login
-            TextButton(
+            Button(
                 onClick = { navigator.pop() },
-                enabled = !isLoading
+                enabled = !isLoading,
+                variant = ButtonVariant.Ghost
             ) {
                 Text("Already have an account? Login")
             }
@@ -253,15 +288,15 @@ private fun RegisterScreenPreview() {
         ) {
             Text(
                 text = "Create Account",
-                style = MaterialTheme.typography.headlineLarge
+                style = AppTheme.typography.headlineLarge
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Join Rent My Car",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                style = AppTheme.typography.bodyLarge,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -311,7 +346,7 @@ private fun RegisterScreenPreview() {
 
             Text(
                 text = "Select Role (Optional)",
-                style = MaterialTheme.typography.titleMedium
+                style = AppTheme.typography.titleMedium
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -346,7 +381,10 @@ private fun RegisterScreenPreview() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = { }) {
+            Button(
+                onClick = { },
+                variant = ButtonVariant.Ghost
+            ) {
                 Text("Already have an account? Login")
             }
         }

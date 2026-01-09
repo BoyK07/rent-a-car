@@ -56,18 +56,28 @@ val Green50: Color = Color(0xFFE0FAEC)
 data class Colors(
     val primary: Color,
     val onPrimary: Color,
+    val primaryContainer: Color,
+    val onPrimaryContainer: Color,
     val secondary: Color,
     val onSecondary: Color,
+    val secondaryContainer: Color,
+    val onSecondaryContainer: Color,
     val tertiary: Color,
     val onTertiary: Color,
+    val tertiaryContainer: Color,
+    val onTertiaryContainer: Color,
     val error: Color,
     val onError: Color,
+    val errorContainer: Color,
+    val onErrorContainer: Color,
     val success: Color,
     val onSuccess: Color,
     val disabled: Color,
     val onDisabled: Color,
     val surface: Color,
     val onSurface: Color,
+    val surfaceVariant: Color,
+    val onSurfaceVariant: Color,
     val background: Color,
     val onBackground: Color,
     val outline: Color,
@@ -85,14 +95,24 @@ internal val LightColors =
     Colors(
         primary = Black,
         onPrimary = White,
+        primaryContainer = Blue100,
+        onPrimaryContainer = Blue900,
         secondary = Gray400,
         onSecondary = Black,
+        secondaryContainer = Gray100,
+        onSecondaryContainer = Gray900,
         tertiary = Blue900,
         onTertiary = White,
+        tertiaryContainer = Blue100,
+        onTertiaryContainer = Blue900,
         surface = Gray200,
         onSurface = Black,
+        surfaceVariant = Gray100,
+        onSurfaceVariant = Gray900,
         error = Red600,
         onError = White,
+        errorContainer = Red100,
+        onErrorContainer = Red900,
         success = Green600,
         onSuccess = White,
         disabled = Gray100,
@@ -114,14 +134,24 @@ internal val DarkColors =
     Colors(
         primary = White,
         onPrimary = Black,
+        primaryContainer = Blue900,
+        onPrimaryContainer = Blue100,
         secondary = Gray400,
         onSecondary = White,
+        secondaryContainer = Gray800,
+        onSecondaryContainer = Gray100,
         tertiary = Blue300,
         onTertiary = Black,
+        tertiaryContainer = Blue800,
+        onTertiaryContainer = Blue100,
         surface = Gray900,
         onSurface = White,
+        surfaceVariant = Gray800,
+        onSurfaceVariant = Gray100,
         error = Red400,
         onError = Black,
+        errorContainer = Red900,
+        onErrorContainer = Red100,
         success = Green700,
         onSuccess = Black,
         disabled = Gray700,
@@ -146,10 +176,15 @@ val LocalContentAlpha = compositionLocalOf { 1f }
 fun Colors.contentColorFor(backgroundColor: Color): Color {
     return when (backgroundColor) {
         primary -> onPrimary
+        primaryContainer -> onPrimaryContainer
         secondary -> onSecondary
+        secondaryContainer -> onSecondaryContainer
         tertiary -> onTertiary
+        tertiaryContainer -> onTertiaryContainer
         surface -> onSurface
+        surfaceVariant -> onSurfaceVariant
         error -> onError
+        errorContainer -> onErrorContainer
         success -> onSuccess
         disabled -> onDisabled
         background -> onBackground

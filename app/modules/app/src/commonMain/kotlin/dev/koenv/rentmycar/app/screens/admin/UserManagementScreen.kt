@@ -16,11 +16,13 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
-import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
-import dev.koenv.rentmycar.app.ui.components.BottomNavItem
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
+import dev.koenv.rentmycar.app.ui.layout.MainLayoutBottomBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.Role
 import dev.koenv.rentmycar.shared.dto.user.PatchUserRequestDto
@@ -50,18 +52,6 @@ class UserManagementScreen : Screen {
         val currentUser by authRepository.currentUser.collectAsState()
         val isAdmin = currentUser?.role?.name == "ADMIN"
         val scope = rememberCoroutineScope()
-        
-        // Define bottom navigation items
-        val navItems = remember(isAdmin) {
-            buildList {
-                add(BottomNavItem("Home", Icons.Default.Home, "home"))
-                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
-                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
-                if (isAdmin) {
-                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
-                }
-            }
-        }
         
         // Fetch users on screen load
         LaunchedEffect(Unit) {
@@ -105,7 +95,7 @@ class UserManagementScreen : Screen {
                             }
                         }
                     ) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text("Delete", color = AppTheme.colors.error)
                     }
                 },
                 dismissButton = {
@@ -147,30 +137,27 @@ class UserManagementScreen : Screen {
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("User Management") },
-                    navigationIcon = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
+                        Text(
+                            text = "User Management",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        )
                     }
-                )
+                }
             },
             bottomBar = {
-                AppBottomNavigationBar(
-                    selectedIndex = 3, // Admin is selected
-                    onItemSelected = { index ->
-                        when (navItems[index].route) {
-                            "home" -> navigator.replaceAll(HomeScreen())
-                            "reservations" -> {
-                                // TODO: Navigate to reservations when implemented
-                            }
-                            "profile" -> navigator.replaceAll(ProfileScreen())
-                            "admin" -> navigator.pop() // Go back to admin dashboard
-                        }
-                    },
-                    items = navItems
-                )
+                MainLayoutBottomBar(selectedRoute = "admin")
             }
         ) { paddingValues ->
             Box(
@@ -193,7 +180,7 @@ class UserManagementScreen : Screen {
                         ) {
                             Text(
                                 text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                color = AppTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navigator.pop() }) {
@@ -217,21 +204,21 @@ class UserManagementScreen : Screen {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        containerColor = AppTheme.colors.primaryContainer
                                     )
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text(
                                             text = "Total Users: ${users.size}",
-                                            style = MaterialTheme.typography.titleMedium
+                                            style = AppTheme.typography.titleMedium
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = "Admins: ${users.count { it.role.name == "ADMIN" }} | " +
                                                   "Drivers: ${users.count { it.role.name == "DRIVER" }} | " +
                                                   "Members: ${users.count { it.role.name == "MEMBER" }}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colors.onPrimaryContainer.copy(alpha = 0.7f)
                                         )
                                     }
                                 }
@@ -279,7 +266,7 @@ private fun UserListItem(
                     Icons.Default.Person,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = AppTheme.colors.primary
                 )
                 
                 Column {
@@ -289,14 +276,14 @@ private fun UserListItem(
                     ) {
                         Text(
                             text = user.name,
-                            style = MaterialTheme.typography.titleMedium
+                            style = AppTheme.typography.titleMedium
                         )
                         if (isCurrentUser) {
                             AssistChip(
                                 onClick = { },
-                                label = { Text("You", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("You", style = AppTheme.typography.labelSmall) },
                                 colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                    containerColor = AppTheme.colors.secondaryContainer
                                 )
                             )
                         }
@@ -304,8 +291,8 @@ private fun UserListItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = user.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        style = AppTheme.typography.bodyMedium,
+                        color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     AssistChip(
@@ -313,14 +300,14 @@ private fun UserListItem(
                         label = { 
                             Text(
                                 user.role.name,
-                                style = MaterialTheme.typography.labelSmall
+                                style = AppTheme.typography.labelSmall
                             ) 
                         },
                         colors = AssistChipDefaults.assistChipColors(
                             containerColor = when (user.role.name) {
-                                "ADMIN" -> MaterialTheme.colorScheme.errorContainer
-                                "DRIVER" -> MaterialTheme.colorScheme.tertiaryContainer
-                                else -> MaterialTheme.colorScheme.surfaceVariant
+                                "ADMIN" -> AppTheme.colors.errorContainer
+                                "DRIVER" -> AppTheme.colors.tertiaryContainer
+                                else -> AppTheme.colors.surfaceVariant
                             }
                         )
                     )
@@ -335,7 +322,7 @@ private fun UserListItem(
                 IconButton(
                     onClick = onEdit,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
+                        contentColor = AppTheme.colors.primary
                     )
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit user")
@@ -346,7 +333,7 @@ private fun UserListItem(
                     IconButton(
                         onClick = onDelete,
                         colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                            contentColor = AppTheme.colors.error
                         )
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete user")
@@ -448,14 +435,23 @@ private fun UserManagementScreenPreview() {
     AppTheme {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("User Management") },
-                    navigationIcon = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(onClick = { }) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
+                        Text(
+                            text = "User Management",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -472,18 +468,18 @@ private fun UserManagementScreenPreview() {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                containerColor = AppTheme.colors.primaryContainer
                             )
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
                                     text = "Total Users: 3",
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = AppTheme.typography.titleMedium
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Admins: 1 | Drivers: 1 | Members: 1",
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = AppTheme.typography.bodySmall
                                 )
                             }
                         }

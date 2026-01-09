@@ -5,7 +5,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,8 +20,15 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
+import dev.koenv.rentmycar.app.ui.components.Switch
 import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
@@ -79,14 +92,26 @@ data class EditCarScreen(
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Edit Car") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { navigator.pop() },
+                            variant = IconButtonVariant.Ghost
+                        ) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
+                        Text(
+                            text = "Edit Car",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -109,7 +134,7 @@ data class EditCarScreen(
                         ) {
                             Text(
                                 text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                color = AppTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navigator.pop() }) {
@@ -294,7 +319,7 @@ data class EditCarScreen(
                                 if (isSaving) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        color = AppTheme.colors.onPrimary
                                     )
                                 } else {
                                     Text("Save Changes")
@@ -304,7 +329,7 @@ data class EditCarScreen(
                             if (errorMessage != null) {
                                 Text(
                                     text = errorMessage ?: "",
-                                    color = MaterialTheme.colorScheme.error,
+                                    color = AppTheme.colors.error,
                                     modifier = Modifier.padding(top = 8.dp)
                                 )
                             }

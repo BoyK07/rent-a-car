@@ -7,7 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,8 +17,16 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
+import dev.koenv.rentmycar.app.ui.AppTheme
+import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.ButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.car.CarDto
 import kotlinx.coroutines.launch
@@ -31,7 +40,6 @@ import kotlin.uuid.Uuid
 data class CarDetailScreen(
     val carId: Uuid
 ) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -79,7 +87,7 @@ data class CarDetailScreen(
                     ) 
                 },
                 confirmButton = {
-                    TextButton(
+                    Button(
                         onClick = {
                             showDeleteDialog = false
                             scope.launch {
@@ -89,13 +97,17 @@ data class CarDetailScreen(
                                     errorMessage = error.message ?: "Failed to delete car"
                                 }
                             }
-                        }
+                        },
+                        variant = ButtonVariant.Destructive
                     ) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text("Delete")
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
+                    Button(
+                        onClick = { showDeleteDialog = false },
+                        variant = ButtonVariant.Ghost
+                    ) {
                         Text("Cancel")
                     }
                 }
@@ -104,26 +116,45 @@ data class CarDetailScreen(
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Car Details") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        if (canEdit && car != null) {
-                            IconButton(onClick = { 
-                                navigator.push(EditCarScreen(carId))
-                            }) {
-                                Icon(Icons.Filled.Edit, contentDescription = "Edit Car")
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { navigator.pop() },
+                                variant = IconButtonVariant.Ghost
+                            ) {
+                                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                             }
-                            IconButton(onClick = { showDeleteDialog = true }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Delete Car")
+                            Text(
+                                text = "Car Details",
+                                style = AppTheme.typography.titleLarge,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                        if (canEdit && car != null) {
+                            Row {
+                                IconButton(
+                                    onClick = { navigator.push(EditCarScreen(carId)) },
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Edit Car")
+                                }
+                                IconButton(
+                                    onClick = { showDeleteDialog = true },
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Delete Car")
+                                }
                             }
                         }
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -146,7 +177,7 @@ data class CarDetailScreen(
                         ) {
                             Text(
                                 text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                color = AppTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navigator.pop() }) {
@@ -177,13 +208,13 @@ private fun CarDetailContent(car: CarDto) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "${car.brand} ${car.model}",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = AppTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = car.category.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    style = AppTheme.typography.titleMedium,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                 )
             }
         }
@@ -193,7 +224,7 @@ private fun CarDetailContent(car: CarDto) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Pricing",
-                    style = MaterialTheme.typography.titleLarge
+                    style = AppTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -203,8 +234,8 @@ private fun CarDetailContent(car: CarDto) {
                     Text(text = "Rate per hour:")
                     Text(
                         text = "\u20ac${car.ratePerHour.roundSignificand(DecimalMode.US_CURRENCY).toPlainString()}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
             }
@@ -215,7 +246,7 @@ private fun CarDetailContent(car: CarDto) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Details",
-                    style = MaterialTheme.typography.titleLarge
+                    style = AppTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -236,7 +267,7 @@ private fun CarDetailContent(car: CarDto) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Location",
-                    style = MaterialTheme.typography.titleLarge
+                    style = AppTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -257,12 +288,12 @@ private fun DetailRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            style = AppTheme.typography.bodyMedium,
+            color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium
+            style = AppTheme.typography.bodyMedium
         )
     }
 }

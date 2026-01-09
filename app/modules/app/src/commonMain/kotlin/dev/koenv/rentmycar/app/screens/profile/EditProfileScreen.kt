@@ -13,8 +13,12 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.user.PatchUserRequestDto
 import kotlinx.coroutines.launch
@@ -63,14 +67,23 @@ class EditProfileScreen : Screen {
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Edit Profile") },
-                    navigationIcon = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
+                        Text(
+                            text = "Edit Profile",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -94,8 +107,8 @@ class EditProfileScreen : Screen {
                         ) {
                             Text(
                                 text = errorMessage ?: "Error loading profile",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error
+                                style = AppTheme.typography.bodyLarge,
+                                color = AppTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navigator.pop() }) {
@@ -113,8 +126,8 @@ class EditProfileScreen : Screen {
                         ) {
                             Text(
                                 text = "Edit your profile information",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                style = AppTheme.typography.titleMedium,
+                                color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                             )
                             
                             // Name field
@@ -143,8 +156,8 @@ class EditProfileScreen : Screen {
                             if (errorMessage != null && name.isNotEmpty()) {
                                 Text(
                                     text = errorMessage!!,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
+                                    color = AppTheme.colors.error,
+                                    style = AppTheme.typography.bodySmall
                                 )
                             }
                             
@@ -200,7 +213,7 @@ class EditProfileScreen : Screen {
                                 if (isSaving) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        color = AppTheme.colors.onPrimary,
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))

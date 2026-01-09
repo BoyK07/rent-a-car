@@ -17,6 +17,7 @@ import dev.koenv.rentmycar.shared.repository.ReservationRepository
 import dev.koenv.rentmycar.shared.repository.UserRepository
 import dev.koenv.rentmycar.shared.storage.AppDataStorage
 import dev.koenv.rentmycar.shared.storage.AuthTokenStorage
+import dev.koenv.rentmycar.shared.storage.ThemePreferences
 import dev.koenv.rentmycar.shared.state.FilterState
 import io.ktor.client.*
 
@@ -41,6 +42,7 @@ object SharedModule {
     // Storage
     private val _authTokenStorage: AuthTokenStorage by lazy { AuthTokenStorage() }
     private val _appDataStorage: AppDataStorage by lazy { AppDataStorage() }
+    private val _themePreferences: ThemePreferences by lazy { ThemePreferences() }
     
     // HTTP Client
     private val httpClient: HttpClient by lazy {
@@ -108,6 +110,11 @@ object SharedModule {
      * Provides access to app data storage for UI layer if needed.
      */
     fun getAppDataStorage(): AppDataStorage = _appDataStorage
+    
+    /**
+     * Provides access to theme preferences for UI layer.
+     */
+    fun getThemePreferences(): ThemePreferences = _themePreferences
     
     /**
      * Initializes the shared module with platform-specific database driver.

@@ -25,6 +25,16 @@ data class Typography(
     val label3: TextStyle,
     val button: TextStyle,
     val input: TextStyle,
+    // Material3-compatible aliases
+    val headlineLarge: TextStyle,
+    val headlineMedium: TextStyle,
+    val headlineSmall: TextStyle,
+    val titleLarge: TextStyle,
+    val titleMedium: TextStyle,
+    val bodyLarge: TextStyle,
+    val bodyMedium: TextStyle,
+    val bodySmall: TextStyle,
+    val labelSmall: TextStyle,
 )
 
 private val defaultTypography =
@@ -113,6 +123,70 @@ private val defaultTypography =
                 lineHeight = 24.sp,
                 letterSpacing = 0.sp,
             ),
+        // Material3-compatible aliases
+        headlineLarge =
+            TextStyle(
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                lineHeight = 40.sp,
+                letterSpacing = 0.sp,
+            ),
+        headlineMedium =
+            TextStyle(
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                lineHeight = 36.sp,
+                letterSpacing = 0.sp,
+            ),
+        headlineSmall =
+            TextStyle(
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
+                letterSpacing = 0.sp,
+            ),
+        titleLarge =
+            TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 22.sp,
+                lineHeight = 28.sp,
+                letterSpacing = 0.sp,
+            ),
+        titleMedium =
+            TextStyle(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                letterSpacing = 0.15.sp,
+            ),
+        bodyLarge =
+            TextStyle(
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                letterSpacing = 0.5.sp,
+            ),
+        bodyMedium =
+            TextStyle(
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                letterSpacing = 0.25.sp,
+            ),
+        bodySmall =
+            TextStyle(
+                fontWeight = FontWeight.Normal,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.4.sp,
+            ),
+        labelSmall =
+            TextStyle(
+                fontWeight = FontWeight.W500,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 0.5.sp,
+            ),
     )
 
 @Composable
@@ -132,6 +206,15 @@ fun provideTypography(): Typography {
         label3 = defaultTypography.label3.copy(fontFamily = fontFamily),
         button = defaultTypography.button.copy(fontFamily = fontFamily),
         input = defaultTypography.input.copy(fontFamily = fontFamily),
+        headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = fontFamily),
+        headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = fontFamily),
+        headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = fontFamily),
+        titleLarge = defaultTypography.titleLarge.copy(fontFamily = fontFamily),
+        titleMedium = defaultTypography.titleMedium.copy(fontFamily = fontFamily),
+        bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = fontFamily),
+        bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = fontFamily),
+        bodySmall = defaultTypography.bodySmall.copy(fontFamily = fontFamily),
+        labelSmall = defaultTypography.labelSmall.copy(fontFamily = fontFamily),
     )
 }
 

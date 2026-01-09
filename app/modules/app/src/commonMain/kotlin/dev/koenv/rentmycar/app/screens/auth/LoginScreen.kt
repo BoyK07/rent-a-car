@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +19,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.ButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.auth.LoginRequestDto
@@ -60,15 +64,15 @@ class LoginScreen : Screen {
             ) {
             Text(
                 text = "Rent My Car",
-                style = MaterialTheme.typography.headlineLarge
+                style = AppTheme.typography.headlineLarge
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
                 text = "Login to your account",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                style = AppTheme.typography.bodyLarge,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -81,7 +85,14 @@ class LoginScreen : Screen {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -95,7 +106,14 @@ class LoginScreen : Screen {
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppTheme.colors.primary,
+                    unfocusedBorderColor = AppTheme.colors.outline,
+                    focusedLabelColor = AppTheme.colors.primary,
+                    unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+                    cursorColor = AppTheme.colors.primary
+                )
             )
             
             // Error message
@@ -103,8 +121,8 @@ class LoginScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    color = AppTheme.colors.error,
+                    style = AppTheme.typography.bodySmall
                 )
             }
             
@@ -139,7 +157,7 @@ class LoginScreen : Screen {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = AppTheme.colors.onPrimary
                     )
                 } else {
                     Text("Login")
@@ -149,9 +167,10 @@ class LoginScreen : Screen {
             Spacer(modifier = Modifier.height(16.dp))
             
             // Navigate to register
-            TextButton(
+            Button(
                 onClick = { navigator.push(RegisterScreen()) },
-                enabled = !isLoading
+                enabled = !isLoading,
+                variant = ButtonVariant.Ghost
             ) {
                 Text("Don't have an account? Register")
             }
@@ -177,15 +196,15 @@ private fun LoginScreenPreview() {
         ) {
             Text(
                 text = "Rent My Car",
-                style = MaterialTheme.typography.headlineLarge
+                style = AppTheme.typography.headlineLarge
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
                 text = "Login to your account",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                style = AppTheme.typography.bodyLarge,
+                color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -215,8 +234,8 @@ private fun LoginScreenPreview() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    color = AppTheme.colors.error,
+                    style = AppTheme.typography.bodySmall
                 )
             }
             
@@ -231,7 +250,10 @@ private fun LoginScreenPreview() {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            TextButton(onClick = { }) {
+            Button(
+                onClick = { },
+                variant = ButtonVariant.Ghost
+            ) {
                 Text("Don't have an account? Register")
             }
         }

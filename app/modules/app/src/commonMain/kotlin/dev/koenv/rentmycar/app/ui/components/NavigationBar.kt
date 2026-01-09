@@ -3,8 +3,10 @@ package dev.koenv.rentmycar.app.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -66,15 +68,24 @@ fun NavigationBar(
         contentColor = contentColor,
         modifier = modifier,
     ) {
-        Row(
-            modifier =
-                Modifier
+        Column {
+            // Top divider to make navigation bar more visible
+            Box(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(windowInsets)
-                    .height(NavigationBarHeight)
-                    .selectableGroup(),
-            content = content,
-        )
+                    .height(1.dp)
+                    .background(AppTheme.colors.onBackground.copy(alpha = 0.12f))
+            )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(windowInsets)
+                        .height(NavigationBarHeight)
+                        .selectableGroup(),
+                content = content,
+            )
+        }
     }
 }
 

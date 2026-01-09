@@ -7,6 +7,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
+import dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen
 
 /**
  * Navigation destinations for bottom navigation bar.
@@ -25,7 +26,7 @@ sealed class NavDestination(
     data object Reservations : NavDestination(
         title = "Reservations",
         icon = Icons.Default.DateRange,
-        screen = HomeScreen() // TODO: Replace with ReservationListScreen when implemented
+        screen = ReservationListScreen()
     )
     
     data object Profile : NavDestination(

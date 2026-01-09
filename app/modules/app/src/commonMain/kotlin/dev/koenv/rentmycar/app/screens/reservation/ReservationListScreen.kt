@@ -6,7 +6,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,25 +21,43 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
-import dev.koenv.rentmycar.app.screens.admin.AdminScreen
-import dev.koenv.rentmycar.app.screens.home.HomeScreen
-import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
-import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
-import dev.koenv.rentmycar.app.ui.components.BottomNavItem
+import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.app.ui.layout.MainLayoutBottomBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.ReservationStatus
 import dev.koenv.rentmycar.shared.dto.reservation.ReservationDto
 import kotlinx.coroutines.launch
 
 /**
+ * Formats a LocalDateTime to a human-readable string.
+ * Example: "Jan 12, 2026 at 10:00 AM"
+ */
+private fun formatDateTime(dateTime: kotlinx.datetime.LocalDateTime): String {
+    val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    val month = months[dateTime.monthNumber - 1]
+    val day = dateTime.dayOfMonth
+    val year = dateTime.year
+    
+    val hour = if (dateTime.hour == 0) 12 else if (dateTime.hour > 12) dateTime.hour - 12 else dateTime.hour
+    val minute = dateTime.minute.toString().padStart(2, '0')
+    val amPm = if (dateTime.hour < 12) "AM" else "PM"
+    
+    return "$month $day, $year at $hour:$minute $amPm"
+}
+
+/**
  * Screen displaying user's reservations.
  * Shows active, past, and cancelled reservations with filtering.
  */
 class ReservationListScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -48,7 +72,6 @@ class ReservationListScreen : Screen {
         
         val scope = rememberCoroutineScope()
         val currentUser by authRepository.currentUser.collectAsState()
-        val isAdmin = currentUser?.role?.name == "ADMIN"
         
         // Fetch reservations
         LaunchedEffect(selectedFilter) {
@@ -106,26 +129,25 @@ class ReservationListScreen : Screen {
             }
         }
         
-        // Define bottom navigation items
-        val navItems = remember(isAdmin) {
-            buildList {
-                add(BottomNavItem("Home", Icons.Default.Home, "home"))
-                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
-                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
-                if (isAdmin) {
-                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
-                }
-            }
-        }
-        
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("My Reservations") },
-                    actions = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "My Reservations",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        )
                         IconButton(
                             onClick = refreshReservations,
-                            enabled = !isRefreshing
+                            enabled = !isRefreshing,
+                            variant = IconButtonVariant.Ghost
                         ) {
                             if (isRefreshing) {
                                 CircularProgressIndicator(
@@ -133,25 +155,14 @@ class ReservationListScreen : Screen {
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Icon(Icons.Default.Refresh, "Refresh")
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                             }
                         }
                     }
-                )
+                }
             },
             bottomBar = {
-                AppBottomNavigationBar(
-                    selectedIndex = 1, // Reservations is selected
-                    onItemSelected = { index ->
-                        when (navItems[index].route) {
-                            "home" -> navigator.replaceAll(HomeScreen())
-                            "reservations" -> { /* Already on reservations */ }
-                            "profile" -> navigator.replaceAll(ProfileScreen())
-                            "admin" -> navigator.replaceAll(AdminScreen())
-                        }
-                    },
-                    items = navItems
-                )
+                MainLayoutBottomBar(selectedRoute = "reservations")
             }
         ) { paddingValues ->
             Column(
@@ -160,31 +171,45 @@ class ReservationListScreen : Screen {
                     .padding(paddingValues)
             ) {
                 // Filter tabs
-                ScrollableTabRow(
+                PrimaryScrollableTabRow(
                     selectedTabIndex = selectedFilter,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    containerColor = AppTheme.colors.background,
+                    contentColor = AppTheme.colors.onBackground,
+                    indicator = {
+                        TabRowDefaults.PrimaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(selectedFilter),
+                            color = AppTheme.colors.primary
+                        )
+                    }
                 ) {
                     Tab(
                         selected = selectedFilter == 0,
                         onClick = { selectedFilter = 0 },
-                        text = { Text("All") }
+                        text = { Text("All", color = if (selectedFilter == 0) AppTheme.colors.primary else AppTheme.colors.onBackground) }
                     )
                     Tab(
                         selected = selectedFilter == 1,
                         onClick = { selectedFilter = 1 },
-                        text = { Text("Active") }
+                        text = { Text("Active", color = if (selectedFilter == 1) AppTheme.colors.primary else AppTheme.colors.onBackground) }
                     )
                     Tab(
                         selected = selectedFilter == 2,
                         onClick = { selectedFilter = 2 },
-                        text = { Text("Past") }
+                        text = { Text("Past", color = if (selectedFilter == 2) AppTheme.colors.primary else AppTheme.colors.onBackground) }
                     )
                     Tab(
                         selected = selectedFilter == 3,
                         onClick = { selectedFilter = 3 },
-                        text = { Text("Cancelled") }
+                        text = { Text("Cancelled", color = if (selectedFilter == 3) AppTheme.colors.primary else AppTheme.colors.onBackground) }
                     )
                 }
+                
+                // Divider below tabs
+                Divider(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = AppTheme.colors.outline
+                )
                 
                 // Content
                 Box(
@@ -208,8 +233,8 @@ class ReservationListScreen : Screen {
                             ) {
                                 Text(
                                     text = errorMessage ?: "Error",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.error
+                                    style = AppTheme.typography.bodyLarge,
+                                    color = AppTheme.colors.error
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(onClick = {
@@ -245,7 +270,7 @@ class ReservationListScreen : Screen {
                                     imageVector = Icons.Default.DateRange,
                                     contentDescription = null,
                                     modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                    tint = AppTheme.colors.onSurface.copy(alpha = 0.3f)
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
@@ -255,14 +280,14 @@ class ReservationListScreen : Screen {
                                         3 -> "No cancelled reservations"
                                         else -> "No reservations yet"
                                     },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    style = AppTheme.typography.bodyLarge,
+                                    color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Browse cars and make a reservation!",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    style = AppTheme.typography.bodySmall,
+                                    color = AppTheme.colors.onSurface.copy(alpha = 0.4f)
                                 )
                             }
                         }
@@ -310,7 +335,7 @@ private fun ReservationCard(
             ) {
                 Text(
                     text = "Reservation #${reservation.id.toString().take(8)}",
-                    style = MaterialTheme.typography.titleMedium
+                    style = AppTheme.typography.titleMedium
                 )
                 StatusChip(status = reservation.status)
             }
@@ -325,16 +350,16 @@ private fun ReservationCard(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    tint = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                 )
                 Column {
                     Text(
-                        text = "Start: ${reservation.startTime}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Start: ${formatDateTime(reservation.startTime)}",
+                        style = AppTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "End: ${reservation.endTime}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "End: ${formatDateTime(reservation.endTime)}",
+                        style = AppTheme.typography.bodyMedium
                     )
                 }
             }
@@ -346,13 +371,13 @@ private fun ReservationCard(
             ) {
                 Text(
                     text = "Total: €${reservation.priceTotal.roundSignificand(DecimalMode.US_CURRENCY).toPlainString()}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    style = AppTheme.typography.titleMedium,
+                    color = AppTheme.colors.primary
                 )
                 Text(
                     text = "${reservation.pointsAwarded} points",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = AppTheme.typography.bodySmall,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -362,10 +387,10 @@ private fun ReservationCard(
 @Composable
 private fun StatusChip(status: ReservationStatus) {
     val (color, text) = when (status) {
-        ReservationStatus.PENDING -> MaterialTheme.colorScheme.tertiary to "Pending"
-        ReservationStatus.CONFIRMED -> MaterialTheme.colorScheme.primary to "Confirmed"
-        ReservationStatus.CANCELLED -> MaterialTheme.colorScheme.error to "Cancelled"
-        ReservationStatus.COMPLETED -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) to "Completed"
+        ReservationStatus.PENDING -> AppTheme.colors.tertiary to "Pending"
+        ReservationStatus.CONFIRMED -> AppTheme.colors.primary to "Confirmed"
+        ReservationStatus.CANCELLED -> AppTheme.colors.error to "Cancelled"
+        ReservationStatus.COMPLETED -> AppTheme.colors.onSurface.copy(alpha = 0.6f) to "Completed"
     }
     
     AssistChip(

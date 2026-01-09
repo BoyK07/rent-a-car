@@ -6,7 +6,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,11 +32,15 @@ import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
-import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
-import dev.koenv.rentmycar.app.ui.components.BottomNavItem
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.app.ui.layout.MainLayoutBottomBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.car.CarDto
 import kotlinx.coroutines.launch
@@ -36,7 +52,6 @@ import kotlin.math.sqrt
  * Main entry point after authentication.
  */
 class HomeScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -164,27 +179,26 @@ class HomeScreen : Screen {
             }
         }
         
-        // Define bottom navigation items
-        val navItems = remember(isAdmin) {
-            buildList {
-                add(BottomNavItem("Home", Icons.Default.Home, "home"))
-                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
-                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
-                if (isAdmin) {
-                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
-                }
-            }
-        }
-        
         Scaffold(
             topBar = {
                 Column {
-                    TopAppBar(
-                        title = { Text("Available Cars") },
-                        actions = {
+                    TopBar {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Available Cars",
+                                style = AppTheme.typography.titleLarge,
+                                modifier = Modifier.weight(1f).padding(start = 8.dp)
+                            )
                             IconButton(
                                 onClick = { refreshCars() },
-                                enabled = !isRefreshing
+                                enabled = !isRefreshing,
+                                variant = IconButtonVariant.Ghost
                             ) {
                                 Icon(
                                     Icons.Default.Refresh,
@@ -192,7 +206,7 @@ class HomeScreen : Screen {
                                 )
                             }
                         }
-                    )
+                    }
                     // LinearProgressIndicator when refreshing
                     if (isRefreshing) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -200,23 +214,14 @@ class HomeScreen : Screen {
                 }
             },
             bottomBar = {
-                AppBottomNavigationBar(
-                    selectedIndex = 0, // Home is selected
-                    onItemSelected = { index ->
-                        when (navItems[index].route) {
-                            "home" -> { /* Already on home */ }
-                            "reservations" -> navigator.replaceAll(dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen())
-                            "profile" -> navigator.replaceAll(ProfileScreen())
-                            "admin" -> navigator.replaceAll(AdminScreen())
-                        }
-                    },
-                    items = navItems
-                )
+                MainLayoutBottomBar(selectedRoute = "home")
             },
             floatingActionButton = {
                 if (canAddCar) {
                     FloatingActionButton(
-                        onClick = { navigator.push(AddCarScreen()) }
+                        onClick = { navigator.push(AddCarScreen()) },
+                        containerColor = AppTheme.colors.primaryContainer,
+                        contentColor = AppTheme.colors.onPrimaryContainer
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add Car")
                     }
@@ -245,7 +250,7 @@ class HomeScreen : Screen {
                         ) {
                             Text(
                                 text = "Filters",
-                                style = MaterialTheme.typography.titleMedium
+                                style = AppTheme.typography.titleMedium
                             )
                             Icon(
                                 imageVector = if (filtersExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -288,7 +293,7 @@ class HomeScreen : Screen {
                                 Column {
                                     Text(
                                         text = "Category",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = AppTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Row(
@@ -317,7 +322,7 @@ class HomeScreen : Screen {
                                 Column {
                                     Text(
                                         text = "Rate per hour: €${minRate.toInt()} - €${maxRate.toInt()}",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = AppTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Row(
@@ -325,7 +330,7 @@ class HomeScreen : Screen {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("€${minRate.toInt()}", style = MaterialTheme.typography.bodySmall)
+                                        Text("€${minRate.toInt()}", style = AppTheme.typography.bodySmall)
                                         androidx.compose.material3.RangeSlider(
                                             value = minRate.toFloat()..maxRate.toFloat(),
                                             onValueChange = { range ->
@@ -335,7 +340,7 @@ class HomeScreen : Screen {
                                             valueRange = 0f..100f,
                                             modifier = Modifier.weight(1f)
                                         )
-                                        Text("€${maxRate.toInt()}", style = MaterialTheme.typography.bodySmall)
+                                        Text("€${maxRate.toInt()}", style = AppTheme.typography.bodySmall)
                                     }
                                 }
                                 
@@ -351,8 +356,8 @@ class HomeScreen : Screen {
                                         Text("Nearby search")
                                         Text(
                                             "Within $maxDistance km",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            style = AppTheme.typography.bodySmall,
+                                            color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                                         )
                                     }
                                     Switch(
@@ -377,7 +382,7 @@ class HomeScreen : Screen {
                                 Column {
                                     Text(
                                         text = "Sort by",
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = AppTheme.typography.bodyMedium
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     var expandedSortMenu by remember { mutableStateOf(false) }
@@ -417,8 +422,8 @@ class HomeScreen : Screen {
                 // Results count
                 Text(
                     text = "${filteredCars.size} car${if (filteredCars.size != 1) "s" else ""} found",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    style = AppTheme.typography.bodyMedium,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.7f),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
                 
@@ -443,7 +448,7 @@ class HomeScreen : Screen {
                             ) {
                                 Text(
                                     text = errorMessage ?: "",
-                                    color = MaterialTheme.colorScheme.error
+                                    color = AppTheme.colors.error
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(onClick = {
@@ -472,14 +477,14 @@ class HomeScreen : Screen {
                             ) {
                                 Text(
                                     text = if (cars.isEmpty()) "No cars available" else "No cars match your filters",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = AppTheme.typography.bodyLarge
                                 )
                                 if (cars.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Try adjusting your filters",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        style = AppTheme.typography.bodyMedium,
+                                        color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                                     )
                                 }
                             }
@@ -548,13 +553,13 @@ private fun CarListItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${car.brand} ${car.model}",
-                        style = MaterialTheme.typography.titleLarge
+                        style = AppTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = car.category.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        style = AppTheme.typography.bodyMedium,
+                        color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                     )
                     if (distance != null) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -563,13 +568,13 @@ private fun CarListItem(
                                 Icons.Default.LocationOn,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = AppTheme.colors.primary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "%.1f km away".format(distance),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                style = AppTheme.typography.bodySmall,
+                                color = AppTheme.colors.primary
                             )
                         }
                     }
@@ -578,15 +583,15 @@ private fun CarListItem(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = "\u20ac${car.ratePerHour.roundSignificand(DecimalMode.US_CURRENCY).toPlainString()}/hr",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                     if (car.fuelType != null) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = car.fuelType!!.name,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            style = AppTheme.typography.bodySmall,
+                            color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
@@ -602,25 +607,25 @@ private fun CarListItem(
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Available",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = AppTheme.colors.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = "Available",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.bodySmall,
+                        color = AppTheme.colors.primary
                     )
                 } else {
                     Icon(
                         Icons.Default.Info,
                         contentDescription = "Unavailable",
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = AppTheme.colors.error,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = "Unavailable",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        style = AppTheme.typography.bodySmall,
+                        color = AppTheme.colors.error
                     )
                 }
             }
@@ -628,20 +633,29 @@ private fun CarListItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenPreview() {
     AppTheme {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Available Cars") },
-                    actions = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Available Cars",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        )
                         IconButton(onClick = { }) {
                             Icon(Icons.Default.Person, contentDescription = "Profile")
                         }
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -667,19 +681,19 @@ private fun HomeScreenPreview() {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = "Tesla Model ${index + 1}",
-                                            style = MaterialTheme.typography.titleLarge
+                                            style = AppTheme.typography.titleLarge
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = "SEDAN",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            style = AppTheme.typography.bodyMedium,
+                                            color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                                         )
                                     }
                                     Text(
                                         text = "€${25 + index * 5}/hr",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary
+                                        style = AppTheme.typography.titleMedium,
+                                        color = AppTheme.colors.primary
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -690,13 +704,13 @@ private fun HomeScreenPreview() {
                                     Icon(
                                         Icons.Default.CheckCircle,
                                         contentDescription = "Available",
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = AppTheme.colors.primary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Text(
                                         text = "Available",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
+                                        style = AppTheme.typography.bodySmall,
+                                        color = AppTheme.colors.primary
                                     )
                                 }
                             }

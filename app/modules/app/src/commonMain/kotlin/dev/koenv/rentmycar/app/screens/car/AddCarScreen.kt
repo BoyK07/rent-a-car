@@ -5,7 +5,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,8 +20,15 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
+import dev.koenv.rentmycar.app.ui.components.Switch
 import dev.koenv.rentmycar.app.ui.components.Text
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
@@ -53,14 +66,26 @@ class AddCarScreen : Screen {
         
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("Add New Car") },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { navigator.pop() },
+                            variant = IconButtonVariant.Ghost
+                        ) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
+                        Text(
+                            text = "Add New Car",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
-                )
+                }
             }
         ) { paddingValues ->
             Column(
@@ -73,8 +98,8 @@ class AddCarScreen : Screen {
             ) {
                 Text(
                     text = "Enter car details",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    style = AppTheme.typography.titleMedium,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                 )
                 
                 // Brand field
@@ -210,8 +235,8 @@ class AddCarScreen : Screen {
                         Text("Make car available immediately")
                         Text(
                             "Car will be visible to renters",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            style = AppTheme.typography.bodySmall,
+                            color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                         )
                     }
                     Switch(
@@ -223,8 +248,8 @@ class AddCarScreen : Screen {
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                        color = AppTheme.colors.error,
+                        style = AppTheme.typography.bodyMedium
                     )
                 }
                 
@@ -280,7 +305,7 @@ class AddCarScreen : Screen {
                     if (isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = AppTheme.colors.onPrimary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }

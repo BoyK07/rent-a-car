@@ -1,11 +1,18 @@
 package dev.koenv.rentmycar.app.screens.profile
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,13 +23,19 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.screens.auth.LoginScreen
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
-import dev.koenv.rentmycar.app.ui.components.AppBottomNavigationBar
-import dev.koenv.rentmycar.app.ui.components.BottomNavItem
+import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
+import dev.koenv.rentmycar.app.ui.components.Icon
+import dev.koenv.rentmycar.app.ui.components.IconButton
+import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
+import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
+import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
+import dev.koenv.rentmycar.app.ui.layout.MainLayoutBottomBar
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.user.UserDto
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -30,7 +43,6 @@ import kotlinx.coroutines.launch
  * Shows role, email, stored data count, and logout functionality.
  */
 class ProfileScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -81,19 +93,11 @@ class ProfileScreen : Screen {
         }
         
         val currentUser by authRepository.currentUser.collectAsState()
-        val isAdmin = currentUser?.role?.name == "ADMIN"
         
-        // Define bottom navigation items
-        val navItems = remember(isAdmin) {
-            buildList {
-                add(BottomNavItem("Home", Icons.Default.Home, "home"))
-                add(BottomNavItem("Reservations", Icons.Default.DateRange, "reservations"))
-                add(BottomNavItem("Profile", Icons.Default.Person, "profile"))
-                if (isAdmin) {
-                    add(BottomNavItem("Admin", Icons.Default.Settings, "admin"))
-                }
-            }
-        }
+        val themePreferences = remember { SharedModule.getThemePreferences() }
+        val darkModePreference by themePreferences.darkModeFlow.collectAsState()
+        val systemDarkTheme = isSystemInDarkTheme()
+        val isDarkMode = darkModePreference ?: systemDarkTheme
         
         // Logout dialog
         if (showLogoutDialog) {
@@ -121,39 +125,42 @@ class ProfileScreen : Screen {
         
         Scaffold(
             topBar = {
-                Column {
-                    TopAppBar(
-                        title = { Text("Profile") },
-                        actions = {
+                TopBar {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Profile",
+                            style = AppTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp)
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             IconButton(
                                 onClick = { refreshProfile() },
-                                enabled = !isRefreshing
+                                enabled = !isRefreshing,
+                                variant = IconButtonVariant.Ghost
                             ) {
                                 Icon(
                                     Icons.Default.Refresh,
                                     contentDescription = "Refresh profile"
                                 )
                             }
-                            IconButton(onClick = { showLogoutDialog = true }) {
+                            IconButton(
+                                onClick = { showLogoutDialog = true },
+                                variant = IconButtonVariant.Ghost
+                            ) {
                                 Icon(Icons.Filled.Logout, contentDescription = "Logout")
                             }
                         }
-                    )
+                    }
                 }
             },
             bottomBar = {
-                AppBottomNavigationBar(
-                    selectedIndex = 2, // Profile is selected
-                    onItemSelected = { index ->
-                        when (navItems[index].route) {
-                            "home" -> navigator.replaceAll(HomeScreen())
-                            "reservations" -> navigator.replaceAll(dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen())
-                            "profile" -> { /* Already on profile */ }
-                            "admin" -> navigator.replaceAll(AdminScreen())
-                        }
-                    },
-                    items = navItems
-                )
+                MainLayoutBottomBar(selectedRoute = "profile")
             }
         ) { paddingValues ->
             Box(
@@ -176,7 +183,7 @@ class ProfileScreen : Screen {
                         ) {
                             Text(
                                 text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                color = AppTheme.colors.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navigator.pop() }) {
@@ -190,7 +197,11 @@ class ProfileScreen : Screen {
                             carsCount = SharedModule.provideCarDao().getAllCars().size,
                             usersCount = SharedModule.provideUserDao().getAllUsers().size,
                             reservationsCount = SharedModule.provideReservationDao().getAllReservations().size,
-                            viewedCarsCount = appDataStorage.getViewedCars().size
+                            viewedCarsCount = appDataStorage.getViewedCars().size,
+                            isDarkMode = isDarkMode,
+                            onDarkModeToggle = { enabled ->
+                                themePreferences.setDarkMode(enabled)
+                            }
                         )
                     }
                 }
@@ -205,9 +216,42 @@ private fun ProfileContent(
     carsCount: Int,
     usersCount: Int,
     reservationsCount: Int,
-    viewedCarsCount: Int
+    viewedCarsCount: Int,
+    isDarkMode: Boolean,
+    onDarkModeToggle: (Boolean) -> Unit
 ) {
     val navigator = LocalNavigator.currentOrThrow
+    val scope = rememberCoroutineScope()
+    var showClearDataDialog by remember { mutableStateOf(false) }
+    
+    // Clear data confirmation dialog
+    if (showClearDataDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDataDialog = false },
+            title = { Text("Clear Local Data") },
+            text = { Text("This will clear all locally cached cars, users, reservations, and viewed history. Your login will be preserved. Continue?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearDataDialog = false
+                    scope.launch {
+                        // Clear database caches
+                        SharedModule.provideCarDao().deleteAll()
+                        SharedModule.provideUserDao().deleteAll()
+                        SharedModule.provideReservationDao().deleteAll()
+                        // Clear app data storage
+                        SharedModule.getAppDataStorage().clearAll()
+                    }
+                }) {
+                    Text("Clear Data")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDataDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
     
     Column(
         modifier = Modifier
@@ -227,13 +271,13 @@ private fun ProfileContent(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = user.name,
-                            style = MaterialTheme.typography.headlineMedium
+                            style = AppTheme.typography.headlineMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = user.email,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            style = AppTheme.typography.bodyLarge,
+                            color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
                         )
                     }
                     IconButton(onClick = { navigator.push(EditProfileScreen()) }) {
@@ -248,7 +292,7 @@ private fun ProfileContent(
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Role",
-                    style = MaterialTheme.typography.titleLarge
+                    style = AppTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 AssistChip(
@@ -266,19 +310,65 @@ private fun ProfileContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = getRoleDescription(user.role.name),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = AppTheme.typography.bodySmall,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                 )
+            }
+        }
+        
+        // Theme settings card
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Appearance",
+                    style = AppTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Dark Mode",
+                            style = AppTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isDarkMode) "Using dark theme" else "Using light theme",
+                            style = AppTheme.typography.bodySmall,
+                            color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = onDarkModeToggle
+                    )
+                }
             }
         }
         
         // Local data card
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Local Data",
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Local Data",
+                        style = AppTheme.typography.titleLarge
+                    )
+                    IconButton(
+                        onClick = { showClearDataDialog = true },
+                        variant = IconButtonVariant.Ghost
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Clear Cache")
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Row(
@@ -288,8 +378,8 @@ private fun ProfileContent(
                     Text(text = "Cars Cached:")
                     Text(
                         text = carsCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
                 
@@ -302,8 +392,8 @@ private fun ProfileContent(
                     Text(text = "Users Cached:")
                     Text(
                         text = usersCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
                 
@@ -316,8 +406,8 @@ private fun ProfileContent(
                     Text(text = "Reservations Cached:")
                     Text(
                         text = reservationsCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
                 
@@ -330,8 +420,8 @@ private fun ProfileContent(
                     Text(text = "Cars Viewed:")
                     Text(
                         text = viewedCarsCount.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
                 
@@ -345,12 +435,12 @@ private fun ProfileContent(
                 ) {
                     Text(
                         text = "Total Cached:",
-                        style = MaterialTheme.typography.titleMedium
+                        style = AppTheme.typography.titleMedium
                     )
                     Text(
                         text = "${carsCount + usersCount + reservationsCount} items",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colors.primary
                     )
                 }
                 
@@ -358,8 +448,8 @@ private fun ProfileContent(
                 
                 Text(
                     text = "This data is stored locally on your device for offline access",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = AppTheme.typography.bodySmall,
+                    color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
