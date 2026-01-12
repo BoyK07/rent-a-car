@@ -154,6 +154,18 @@ class ReservationRepository(
     }
     
     /**
+     * Get reservations for user's owned cars.
+     * This returns a completely separate dataset from "my bookings".
+     */
+    suspend fun getMyCarReservations(forceRefresh: Boolean = false): Result<List<ReservationDto>> {
+        // Always fetch from API for owned car reservations to avoid cache pollution
+        return reservationApi.getMyCarReservations().onSuccess { reservations ->
+            // Store in database with a special marker if needed
+            // For now we just return the data without caching to keep it separate
+        }
+    }
+    
+    /**
      * Get reservations for a specific renter as Flow (reactive).
      */
     fun getReservationsByRenterFlow(renterId: Uuid): Flow<List<ReservationDto>> {

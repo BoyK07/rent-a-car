@@ -83,6 +83,24 @@ class ReservationApi(
     }
     
     /**
+     * Get reservations for user's owned cars.
+     * This returns reservations where the current user owns the car being reserved.
+     */
+    suspend fun getMyCarReservations(): Result<List<ReservationDto>> {
+        return try {
+            val response = httpClient.get(ApiV1.Reservations.MyCars())
+            val apiResponse = response.body<ApiResponse<List<ReservationDto>>>()
+            if (apiResponse.success && apiResponse.data != null) {
+                Result.success(apiResponse.data)
+            } else {
+                Result.failure(Exception(apiResponse.message ?: "Failed to fetch car reservations"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
      * Get a single reservation by ID.
      */
     suspend fun getReservation(id: Uuid): Result<ReservationDto> {

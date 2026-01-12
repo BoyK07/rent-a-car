@@ -58,15 +58,16 @@ class CarAvailabilityApi(
     
     /**
      * Check availability for a specific car and time range.
+     * Returns availability windows that match the criteria.
      */
-    suspend fun checkAvailability(carId: Uuid, start: String, end: String): Result<Boolean> {
+    suspend fun checkAvailability(carId: Uuid, start: String, end: String): Result<List<CarAvailabilityDto>> {
         return try {
             val response = httpClient.get(ApiV1.Availability(
                 carId = carId.toString(),
                 start = start,
                 end = end
             ))
-            val apiResponse = response.body<ApiResponse<Boolean>>()
+            val apiResponse = response.body<ApiResponse<List<CarAvailabilityDto>>>()
             if (apiResponse.success && apiResponse.data != null) {
                 Result.success(apiResponse.data)
             } else {

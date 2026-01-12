@@ -1,5 +1,6 @@
 package dev.koenv.rentmycar.shared.repository
 
+import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.api.AuthApi
 import dev.koenv.rentmycar.shared.dto.auth.AuthResponseDto
 import dev.koenv.rentmycar.shared.dto.auth.LoginRequestDto
@@ -92,6 +93,8 @@ class AuthRepository(
             // Persist user data
             authTokenStorage.saveUserData(json.encodeToString(response.user))
             _authState.value = AuthState.Authenticated
+            // Recreate HTTP client to use the new token
+            SharedModule.recreateHttpClient()
         }.onFailure {
             _authState.value = AuthState.Unauthenticated
         }
@@ -109,19 +112,43 @@ class AuthRepository(
             // Persist user data
             authTokenStorage.saveUserData(json.encodeToString(response.user))
             _authState.value = AuthState.Authenticated
+            // Recreate HTTP client to use the new token
+            SharedModule.recreateHttpClient()
         }.onFailure {
             _authState.value = AuthState.Unauthenticated
         }
     }
     
     /**
-     * Logs out the current user.
+     * Logs out the current user and clears all local data.
+     * Ensures complete data cleanup including:
+     * - Authentication tokens and user data
+     * - All cached database records (cars, reservations, users)
+     * - App data (viewed cars, preferences)
+     * - HTTP client (to clear cached auth tokens)
      */
     fun logout() {
-        authTokenStorage.clearToken()
-        authTokenStorage.clearUserData()
+        // Clear auth data (token + user data)
+        authTokenStorage.clearAll()
         _currentUser.value = null
         _authState.value = AuthState.Unauthenticated
+        
+        // Recreate HTTP client to clear cached auth tokens from Ktor's Auth plugin
+        SharedModule.recreateHttpClient()
+        
+        // Clear all cached data from local database
+        try {
+            SharedModule.databaseManager.clearAllData()
+        } catch (e: Exception) {
+            // Ignore errors during cleanup
+        }
+        
+        // Clear app data storage (viewed cars, preferences, etc.)
+        try {
+            SharedModule.getAppDataStorage().clearAll()
+        } catch (e: Exception) {
+            // Ignore errors during cleanup
+        }
     }
     
     /**

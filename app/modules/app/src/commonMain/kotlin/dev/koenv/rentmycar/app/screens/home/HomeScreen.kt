@@ -18,7 +18,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ import dev.koenv.rentmycar.app.ui.components.Icon
 import dev.koenv.rentmycar.app.ui.components.IconButton
 import dev.koenv.rentmycar.app.ui.components.IconButtonVariant
 import dev.koenv.rentmycar.app.ui.components.Scaffold
+import dev.koenv.rentmycar.app.ui.components.Switch
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.app.ui.components.card.Card

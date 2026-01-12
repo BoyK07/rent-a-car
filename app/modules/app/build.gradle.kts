@@ -45,6 +45,15 @@ kotlin {
             // =====================================
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.transitions)
+            
+            // =====================================
+            // Image Loading - Coil3
+            // =====================================
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+            implementation(libs.coil.core)
+            implementation(libs.coil.svg)
+            implementation(libs.coil.gif)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

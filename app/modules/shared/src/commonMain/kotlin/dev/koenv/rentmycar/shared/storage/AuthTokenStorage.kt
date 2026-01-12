@@ -64,4 +64,12 @@ class AuthTokenStorage(
     fun clearUserData() {
         settings.remove(KEY_USER_DATA)
     }
+    
+    /**
+     * Clears all stored authentication data (token and user data).
+     */
+    fun clearAll() {
+        clearToken()
+        clearUserData()
+    }
 }

@@ -120,6 +120,28 @@ object ReservationRoutes : RouteRegistrar {
                 call.respondSuccess(filtered.map { it.toDto() })
             }
 
+            // GET /api/v1/reservations/my-cars - Get reservations for user's owned cars
+            get<ApiV1.Reservations.MyCars> {
+                val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
+                val userId = principal.getUserId()
+                val role = principal.getRole()
+
+                // Get user's owned cars
+                val ownedCars = carService.getAll().filter { car ->
+                    role == Role.ADMIN || car.ownerId == userId
+                }
+
+                // Precompute owned car IDs for efficient lookups
+                val ownedCarIds = ownedCars.mapTo(HashSet()) { it.id }
+
+                // Get all reservations for those cars
+                val reservations = reservationService.getAll().filter { reservation ->
+                    reservation.carId in ownedCarIds
+                }
+
+                call.respondSuccess(reservations.map { it.toDto() })
+            }
+
             // GET /api/v1/reservations/{id} - Get specific reservation
             get<ApiV1.Reservations.Id> { resource ->
                 val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
@@ -140,12 +162,21 @@ object ReservationRoutes : RouteRegistrar {
                 val reservation = reservationService.getById(id)
                     ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                // Non-admin users can only view their own reservations
-                if (role != Role.ADMIN && reservation.renterId != userId) {
-                    throw ApiException(
-                        HttpStatusCode.Forbidden,
-                        message = "You are not authorized to view this reservation"
-                    )
+                // Non-admin users can view if they are the renter OR the car owner
+                if (role != Role.ADMIN) {
+                    val isRenter = reservation.renterId == userId
+                    val car = carService.getById(reservation.carId)
+                        ?: throw ApiException(
+                            HttpStatusCode.NotFound,
+                            message = "Car associated with this reservation was not found"
+                        )
+                    val isCarOwner = car.ownerId == userId
+                    if (!isRenter && !isCarOwner) {
+                        throw ApiException(
+                            HttpStatusCode.Forbidden,
+                            message = "You are not authorized to view this reservation"
+                        )
+                    }
                 }
 
                 call.respondSuccess(reservation.toDto())
@@ -249,7 +280,7 @@ object ReservationRoutes : RouteRegistrar {
                 verifyOwnership(role, renterId, existing.renterId, "reservation")
 
                 if (reservationService.delete(id)) {
-                    call.respondSuccess(Unit, HttpStatusCode.NoContent)
+                    call.respondSuccess(Unit)
                 } else {
                     call.respondError(HttpStatusCode.NotFound, "Reservation not found")
                 }
@@ -258,7 +289,7 @@ object ReservationRoutes : RouteRegistrar {
             // POST /api/v1/reservations/{id}/cancel - Cancel reservation
             post<ApiV1.Reservations.Id.Cancel> { resource ->
                 val principal = call.requireRole(Role.ADMIN, Role.DRIVER, Role.MEMBER)
-                val renterId = principal.getUserId()
+                val userId = principal.getUserId()
                 val role = principal.getRole()
                 
                 val id = try {
@@ -275,10 +306,22 @@ object ReservationRoutes : RouteRegistrar {
                 val existing = reservationService.getById(id)
                     ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                verifyOwnership(role, renterId, existing.renterId, "reservation")
+                // Only renter or car owner (or admin) can cancel
+                if (role != Role.ADMIN) {
+                    val isRenter = existing.renterId == userId
+                    val car = carService.getById(existing.carId)
+                    val isCarOwner = car?.ownerId == userId
+                    
+                    if (!isRenter && !isCarOwner) {
+                        throw ApiException(
+                            HttpStatusCode.Forbidden,
+                            message = "Only the renter or car owner can cancel this reservation"
+                        )
+                    }
+                }
 
                 if (reservationService.cancel(id)) {
-                    call.respondSuccess(Unit, HttpStatusCode.NoContent)
+                    call.respondSuccess(Unit)
                 } else {
                     call.respondError(HttpStatusCode.NotFound, "Reservation not found")
                 }
@@ -365,12 +408,18 @@ object ReservationRoutes : RouteRegistrar {
                 val reservation = reservationService.getById(id)
                     ?: throw ApiException(HttpStatusCode.NotFound, message = "Reservation not found")
 
-                // Non-admin users can only view driving sessions for their own reservations
-                if (role != Role.ADMIN && reservation.renterId != userId) {
-                    throw ApiException(
-                        HttpStatusCode.Forbidden,
-                        message = "You can only view driving sessions for your own reservations"
-                    )
+                // Non-admin users can view if they are the renter OR the car owner
+                if (role != Role.ADMIN) {
+                    val isRenter = reservation.renterId == userId
+                    val car = carService.getById(reservation.carId)
+                    val isCarOwner = car?.ownerId == userId
+                    
+                    if (!isRenter && !isCarOwner) {
+                        throw ApiException(
+                            HttpStatusCode.Forbidden,
+                            message = "You can only view driving sessions for your own reservations or cars"
+                        )
+                    }
                 }
 
                 val sessions = drivingSessionService.getByReservationId(id)

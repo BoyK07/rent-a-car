@@ -37,6 +37,23 @@ class CarPhotoApi(
     }
     
     /**
+     * Get all photos for a specific car.
+     */
+    suspend fun getCarPhotosByCarId(carId: Uuid): Result<List<CarPhotoDto>> {
+        return try {
+            val response = httpClient.get(ApiV1.Cars.Id.Photos(parent = ApiV1.Cars.Id(id = carId.toString())))
+            val apiResponse = response.body<ApiResponse<List<CarPhotoDto>>>()
+            if (apiResponse.success && apiResponse.data != null) {
+                Result.success(apiResponse.data)
+            } else {
+                Result.failure(Exception(apiResponse.message ?: "Failed to fetch car photos"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
      * Get a single car photo by ID.
      */
     suspend fun getCarPhoto(id: Uuid): Result<CarPhotoDto> {

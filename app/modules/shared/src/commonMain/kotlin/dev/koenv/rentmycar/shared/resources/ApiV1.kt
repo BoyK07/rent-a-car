@@ -193,5 +193,9 @@ class ApiV1 {
         @Resource("/active")
         @Serializable
         class Active(val parent: Reservations = Reservations())
+        
+        @Resource("/my-cars")
+        @Serializable
+        class MyCars(val parent: Reservations = Reservations())
     }
 }

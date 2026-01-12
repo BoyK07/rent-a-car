@@ -10,12 +10,10 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,14 +38,15 @@ import dev.koenv.rentmycar.shared.dto.reservation.ReservationDto
 import kotlinx.coroutines.launch
 
 /**
- * Screen displaying user's reservations where they are the renter.
- * Shows active, past, and cancelled reservations with filtering.
+ * Screen displaying reservations for cars owned by the current user.
+ * Allows car owners to view and confirm pending reservations.
  */
-class ReservationListScreen : Screen {
+class MyCarReservationsScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val reservationRepository = remember { SharedModule.reservationRepository }
+        val carsRepository = remember { SharedModule.carsRepository }
         val authRepository = remember { SharedModule.authRepository }
         
         var reservations by remember { mutableStateOf<List<ReservationDto>>(emptyList()) }
@@ -59,7 +58,7 @@ class ReservationListScreen : Screen {
         val scope = rememberCoroutineScope()
         val currentUser by authRepository.currentUser.collectAsState()
         
-        // Fetch reservations where user is the renter
+        // Fetch reservations for owned cars
         val loadReservations: (Boolean) -> Unit = { forceRefresh ->
             scope.launch {
                 if (forceRefresh) {
@@ -69,33 +68,26 @@ class ReservationListScreen : Screen {
                 }
                 errorMessage = null
                 
-                val userId = currentUser?.id
-                if (userId == null) {
-                    errorMessage = "User not logged in"
+                // Use the new dedicated API endpoint
+                reservationRepository.getMyCarReservations(forceRefresh = true).onSuccess { allReservations ->
+                    // Apply filtering
+                    reservations = when (selectedFilter) {
+                        1 -> allReservations.filter { it.status == ReservationStatus.PENDING }
+                        2 -> allReservations.filter { 
+                            it.status == ReservationStatus.PENDING || it.status == ReservationStatus.CONFIRMED
+                        }
+                        3 -> allReservations.filter { it.status == ReservationStatus.COMPLETED }
+                        4 -> allReservations.filter { it.status == ReservationStatus.CANCELLED }
+                        else -> allReservations
+                    }
+                    
                     isLoading = false
                     isRefreshing = false
-                    return@launch
+                }.onFailure { error ->
+                    errorMessage = error.message
+                    isLoading = false
+                    isRefreshing = false
                 }
-                
-                // Always use forceRefresh=true to bypass shared cache
-                reservationRepository.getReservations(renterId = userId, forceRefresh = true)
-                    .onSuccess { allReservations ->
-                        // Apply filtering
-                        reservations = when (selectedFilter) {
-                            1 -> allReservations.filter { it.status == ReservationStatus.PENDING }
-                            2 -> allReservations.filter { 
-                                it.status == ReservationStatus.PENDING || it.status == ReservationStatus.CONFIRMED
-                            }
-                            3 -> allReservations.filter { it.status == ReservationStatus.COMPLETED }
-                            4 -> allReservations.filter { it.status == ReservationStatus.CANCELLED }
-                            else -> allReservations
-                        }
-                    }.onFailure { error ->
-                        errorMessage = error.message ?: "Failed to load reservations"
-                    }
-                
-                isLoading = false
-                isRefreshing = false
             }
         }
         
@@ -114,31 +106,29 @@ class ReservationListScreen : Screen {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        IconButton(
+                            onClick = { navigator.pop() },
+                            variant = IconButtonVariant.Ghost
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
                         Text(
-                            text = "My Bookings",
+                            text = "My Car Reservations",
                             style = AppTheme.typography.titleLarge,
                             modifier = Modifier.weight(1f).padding(start = 8.dp)
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            IconButton(
-                                onClick = { navigator.push(MyCarReservationsScreen()) },
-                                variant = IconButtonVariant.Ghost
-                            ) {
-                                Icon(Icons.Default.DirectionsCar, contentDescription = "My Car Reservations")
-                            }
-                            IconButton(
-                                onClick = { loadReservations(true) },
-                                enabled = !isRefreshing,
-                                variant = IconButtonVariant.Ghost
-                            ) {
-                                if (isRefreshing) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                                }
+                        IconButton(
+                            onClick = { loadReservations(true) },
+                            enabled = !isRefreshing,
+                            variant = IconButtonVariant.Ghost
+                        ) {
+                            if (isRefreshing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                             }
                         }
                     }
@@ -193,7 +183,6 @@ class ReservationListScreen : Screen {
                     )
                 }
                 
-                // Divider below tabs
                 Divider(
                     modifier = Modifier.fillMaxWidth(),
                     color = AppTheme.colors.outline
@@ -239,7 +228,7 @@ class ReservationListScreen : Screen {
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.DateRange,
+                                    imageVector = Icons.Default.DirectionsCar,
                                     contentDescription = null,
                                     modifier = Modifier.size(64.dp),
                                     tint = AppTheme.colors.onSurface.copy(alpha = 0.3f)
@@ -251,16 +240,10 @@ class ReservationListScreen : Screen {
                                         2 -> "No active reservations"
                                         3 -> "No past reservations"
                                         4 -> "No cancelled reservations"
-                                        else -> "No reservations yet"
+                                        else -> "No reservations for your cars yet"
                                     },
                                     style = AppTheme.typography.bodyLarge,
                                     color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Browse cars and make a reservation!",
-                                    style = AppTheme.typography.bodySmall,
-                                    color = AppTheme.colors.onSurface.copy(alpha = 0.4f)
                                 )
                             }
                         }

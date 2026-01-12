@@ -103,11 +103,23 @@ class AppDataStorage(
     }
     
     /**
-     * Clears all stored app data.
+     * Clears all stored app data including preferences.
      */
     fun clearAll() {
         viewedCarsCache = null
         clearViewedCars()
-        // Clear other data as needed
+        
+        // Clear all user preferences
+        // Note: Settings library doesn't have a global clear, so we remove known keys
+        // This is best effort - any custom preferences should be explicitly cleared
+        try {
+            // Get all keys and remove those starting with our prefix
+            val keys = settings.keys
+            keys.filter { it.startsWith(KEY_USER_PREFERENCES) }.forEach { key ->
+                settings.remove(key)
+            }
+        } catch (e: Exception) {
+            // Ignore if keys enumeration isn't supported
+        }
     }
 }
