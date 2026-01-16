@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
     application
 }
@@ -52,6 +53,13 @@ dependencies {
     // Ktor - Serialization
     // =====================================
     implementation(libs.ktor.serialization.kotlinx.json)
+
+    // =====================================
+    // Ktor - Client (Geocoding)
+    // =====================================
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
 
     // =====================================
     // Ktor - Authentication
@@ -128,4 +136,3 @@ tasks.register<JavaExec>("generateMigrations") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("dev.koenv.rentmycar.server.storage.db.MigrationGenerator")
 }
-

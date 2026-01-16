@@ -15,9 +15,7 @@ package dev.koenv.rentmycar.server.routes.api.v1.cars
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.domain.service.SearchService
-import dev.koenv.rentmycar.server.mappers.car.applyPatch
 import dev.koenv.rentmycar.server.mappers.car.toDto
-import dev.koenv.rentmycar.server.mappers.car.toEntity
 import dev.koenv.rentmycar.server.routes.RouteRegistrar
 import dev.koenv.rentmycar.server.util.*
 import dev.koenv.rentmycar.shared.domain.enums.CarCategory
@@ -149,8 +147,24 @@ object CarRoutes : RouteRegistrar {
                 val principal = call.requireRole(Role.ADMIN, Role.DRIVER)
                 val userId = Uuid.parse(principal.payload.getClaim("userId").asString())
                 val req = call.requireBodyOrFail<CreateCarRequestDto>()
-                val created = carService.create(req.toEntity(userId))
-                call.respondCreated(created.toDto())
+                try {
+                    val created = carService.createFromRequest(req, userId)
+                    call.respondCreated(created.toDto())
+                } catch (e: IllegalArgumentException) {
+                    call.respondError(
+                        HttpStatusCode.BadRequest,
+                        e.message ?: "Invalid address",
+                        "INVALID_ADDRESS",
+                        call.callId
+                    )
+                } catch (e: IllegalStateException) {
+                    call.respondError(
+                        HttpStatusCode.InternalServerError,
+                        e.message ?: "Geocoding service unavailable",
+                        "GEOCODING_UNAVAILABLE",
+                        call.callId
+                    )
+                }
             }
 
             put<ApiV1.Cars.Id> { resource ->
@@ -173,11 +187,27 @@ object CarRoutes : RouteRegistrar {
                 verifyOwnership(role, userId, existing.ownerId, "car")
 
                 val req = call.requireBodyOrFail<UpdateCarRequestDto>()
-                val updated = carService.update(id, req.toEntity(id, existing.ownerId))
-                if (updated == null) {
-                    call.respondError(HttpStatusCode.NotFound, "Car not found", "CAR_NOT_FOUND", call.callId)
-                } else {
-                    call.respondSuccess(updated.toDto())
+                try {
+                    val updated = carService.updateFromRequest(id, existing.ownerId, req)
+                    if (updated == null) {
+                        call.respondError(HttpStatusCode.NotFound, "Car not found", "CAR_NOT_FOUND", call.callId)
+                    } else {
+                        call.respondSuccess(updated.toDto())
+                    }
+                } catch (e: IllegalArgumentException) {
+                    call.respondError(
+                        HttpStatusCode.BadRequest,
+                        e.message ?: "Invalid address",
+                        "INVALID_ADDRESS",
+                        call.callId
+                    )
+                } catch (e: IllegalStateException) {
+                    call.respondError(
+                        HttpStatusCode.InternalServerError,
+                        e.message ?: "Geocoding service unavailable",
+                        "GEOCODING_UNAVAILABLE",
+                        call.callId
+                    )
                 }
             }
 
@@ -201,12 +231,27 @@ object CarRoutes : RouteRegistrar {
                 verifyOwnership(role, userId, existing.ownerId, "car")
 
                 val req = call.requireBodyOrFail<PatchCarRequestDto>()
-                val patched = req.applyPatch(existing)
-                val saved = carService.update(id, patched)
-                if (saved == null) {
-                    call.respondError(HttpStatusCode.NotFound, "Car not found", "CAR_NOT_FOUND", call.callId)
-                } else {
-                    call.respondSuccess(saved.toDto())
+                try {
+                    val saved = carService.patchFromRequest(id, existing, req)
+                    if (saved == null) {
+                        call.respondError(HttpStatusCode.NotFound, "Car not found", "CAR_NOT_FOUND", call.callId)
+                    } else {
+                        call.respondSuccess(saved.toDto())
+                    }
+                } catch (e: IllegalArgumentException) {
+                    call.respondError(
+                        HttpStatusCode.BadRequest,
+                        e.message ?: "Invalid address",
+                        "INVALID_ADDRESS",
+                        call.callId
+                    )
+                } catch (e: IllegalStateException) {
+                    call.respondError(
+                        HttpStatusCode.InternalServerError,
+                        e.message ?: "Geocoding service unavailable",
+                        "GEOCODING_UNAVAILABLE",
+                        call.callId
+                    )
                 }
             }
 

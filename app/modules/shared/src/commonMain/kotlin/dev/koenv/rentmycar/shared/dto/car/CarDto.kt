@@ -17,6 +17,12 @@ data class CarDto(
     val fuelType: FuelType? = null,
     @Serializable(with = BigDecimalSerializer::class)
     val ratePerHour: BigDecimal,
+    val addressLine1: String? = null,
+    val addressLine2: String? = null,
+    val postalCode: String? = null,
+    val city: String? = null,
+    val country: String? = null,
+    val formattedAddress: String? = null,
     val locationLat: Double,
     val locationLng: Double,
     val isActive: Boolean

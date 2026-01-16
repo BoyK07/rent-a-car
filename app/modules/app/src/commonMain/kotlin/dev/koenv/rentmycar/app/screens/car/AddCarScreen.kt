@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
  * - Form with all required car details (brand, model, category, fuel, location, pricing)
  * - Category selection dropdown (ICE, BEV, FCEV)
  * - Fuel type selection dropdown
- * - Location coordinate input
+ * - Address input (geocoded server-side)
  * - Active status toggle
  * - Form validation
  * - Save with loading state
@@ -67,8 +67,11 @@ class AddCarScreen : Screen {
         var ratePerHour by remember { mutableStateOf("") }
         var category by remember { mutableStateOf<CarCategory?>(null) }
         var fuelType by remember { mutableStateOf<FuelType?>(null) }
-        var locationLat by remember { mutableStateOf("") }
-        var locationLng by remember { mutableStateOf("") }
+        var addressLine1 by remember { mutableStateOf("") }
+        var addressLine2 by remember { mutableStateOf("") }
+        var postalCode by remember { mutableStateOf("") }
+        var city by remember { mutableStateOf("") }
+        var country by remember { mutableStateOf("") }
         var isActive by remember { mutableStateOf(true) }
         
         var showCategoryMenu by remember { mutableStateOf(false) }
@@ -215,26 +218,58 @@ class AddCarScreen : Screen {
                     }
                 }
                 
-                // Location Latitude field
+                // Address line 1
                 OutlinedTextField(
-                    value = locationLat,
-                    onValueChange = { locationLat = it },
-                    label = { Text("Location Latitude") },
+                    value = addressLine1,
+                    onValueChange = { addressLine1 = it },
+                    label = { Text("Street and Number") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = locationLat.isBlank() && errorMessage != null,
-                    supportingText = { Text("e.g., 52.3676") }
+                    isError = addressLine1.isBlank() && errorMessage != null,
+                    supportingText = { Text("e.g., Coolsingel 1") }
                 )
                 
-                // Location Longitude field
+                // Address line 2 (optional)
                 OutlinedTextField(
-                    value = locationLng,
-                    onValueChange = { locationLng = it },
-                    label = { Text("Location Longitude") },
+                    value = addressLine2,
+                    onValueChange = { addressLine2 = it },
+                    label = { Text("Address Line 2") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = locationLng.isBlank() && errorMessage != null,
-                    supportingText = { Text("e.g., 4.9041") }
+                    supportingText = { Text("Apartment, floor, etc. (optional)") }
+                )
+                
+                // Postal code
+                OutlinedTextField(
+                    value = postalCode,
+                    onValueChange = { postalCode = it },
+                    label = { Text("Postal Code") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = postalCode.isBlank() && errorMessage != null,
+                    supportingText = { Text("e.g., 1012 JS") }
+                )
+                
+                // City
+                OutlinedTextField(
+                    value = city,
+                    onValueChange = { city = it },
+                    label = { Text("City") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = city.isBlank() && errorMessage != null,
+                    supportingText = { Text("e.g., Amsterdam") }
+                )
+                
+                // Country
+                OutlinedTextField(
+                    value = country,
+                    onValueChange = { country = it },
+                    label = { Text("Country") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = country.isBlank() && errorMessage != null,
+                    supportingText = { Text("e.g., Netherlands") }
                 )
                 
                 // Is Active toggle
@@ -270,7 +305,8 @@ class AddCarScreen : Screen {
                     onClick = {
                         // Validate inputs
                         if (brand.isBlank() || model.isBlank() || ratePerHour.isBlank() || 
-                            category == null || locationLat.isBlank() || locationLng.isBlank()) {
+                            category == null || addressLine1.isBlank() || postalCode.isBlank() ||
+                            city.isBlank() || country.isBlank()) {
                             errorMessage = "Please fill in all required fields"
                             return@Button
                         }
@@ -278,13 +314,6 @@ class AddCarScreen : Screen {
                         val rate = runCatching { BigDecimal.parseString(ratePerHour) }.getOrNull()
                         if (rate == null) {
                             errorMessage = "Invalid rate per hour"
-                            return@Button
-                        }
-                        
-                        val lat = locationLat.toDoubleOrNull()
-                        val lng = locationLng.toDoubleOrNull()
-                        if (lat == null || lng == null) {
-                            errorMessage = "Invalid location coordinates"
                             return@Button
                         }
                         
@@ -298,8 +327,11 @@ class AddCarScreen : Screen {
                                 category = category!!,
                                 fuelType = fuelType,
                                 ratePerHour = rate,
-                                locationLat = lat,
-                                locationLng = lng,
+                                addressLine1 = addressLine1,
+                                addressLine2 = addressLine2.takeIf { it.isNotBlank() },
+                                postalCode = postalCode,
+                                city = city,
+                                country = country,
                                 isActive = isActive
                             )
                             

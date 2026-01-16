@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">rentmycar</string>
+    <string name="google_maps_key">AIzaSyCd85a_oJlVExvA27kO8pHKZK7nhCusDr4</string>
 </resources>

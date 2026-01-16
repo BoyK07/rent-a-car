@@ -7,6 +7,9 @@ import dev.koenv.rentmycar.server.storage.repository.CarRepositoryImpl
 import dev.koenv.rentmycar.shared.domain.entity.Car
 import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
+import dev.koenv.rentmycar.shared.dto.car.CreateCarRequestDto
+import dev.koenv.rentmycar.shared.dto.car.PatchCarRequestDto
+import dev.koenv.rentmycar.shared.dto.car.UpdateCarRequestDto
 import kotlin.uuid.Uuid
 
 /**
@@ -23,7 +26,10 @@ import kotlin.uuid.Uuid
  * 
  * @property repo The car repository for data persistence
  */
-class CarService(private val repo: CarRepositoryImpl) {
+class CarService(
+    private val repo: CarRepositoryImpl,
+    private val geocodingService: GeocodingService
+) {
     
     /**
      * Decimal precision mode for all financial calculations.
@@ -47,6 +53,147 @@ class CarService(private val repo: CarRepositoryImpl) {
     suspend fun delete(id: Uuid): Boolean = repo.delete(id)
     
     suspend fun count(): Long = repo.count()
+
+    suspend fun createFromRequest(request: CreateCarRequestDto, ownerId: Uuid): Car {
+        val location = geocodeAddress(
+            addressLine1 = request.addressLine1,
+            addressLine2 = request.addressLine2,
+            postalCode = request.postalCode,
+            city = request.city,
+            country = request.country
+        )
+
+        val car = Car(
+            ownerId = ownerId,
+            brand = request.brand,
+            model = request.model,
+            category = request.category,
+            fuelType = request.fuelType,
+            ratePerHour = request.ratePerHour,
+            addressLine1 = request.addressLine1,
+            addressLine2 = request.addressLine2,
+            postalCode = request.postalCode,
+            city = request.city,
+            country = request.country,
+            formattedAddress = location.formattedAddress,
+            locationLat = location.latitude,
+            locationLng = location.longitude,
+            isActive = request.isActive
+        )
+
+        return repo.create(car)
+    }
+
+    suspend fun updateFromRequest(id: Uuid, ownerId: Uuid, request: UpdateCarRequestDto): Car? {
+        val location = geocodeAddress(
+            addressLine1 = request.addressLine1,
+            addressLine2 = request.addressLine2,
+            postalCode = request.postalCode,
+            city = request.city,
+            country = request.country
+        )
+
+        val car = Car(
+            id = id,
+            ownerId = ownerId,
+            brand = request.brand,
+            model = request.model,
+            category = request.category,
+            fuelType = request.fuelType,
+            ratePerHour = request.ratePerHour,
+            addressLine1 = request.addressLine1,
+            addressLine2 = request.addressLine2,
+            postalCode = request.postalCode,
+            city = request.city,
+            country = request.country,
+            formattedAddress = location.formattedAddress,
+            locationLat = location.latitude,
+            locationLng = location.longitude,
+            isActive = request.isActive
+        )
+
+        return repo.update(id, car)
+    }
+
+    suspend fun patchFromRequest(id: Uuid, existing: Car, request: PatchCarRequestDto): Car? {
+        val addressChanged = listOf(
+            request.addressLine1,
+            request.addressLine2,
+            request.postalCode,
+            request.city,
+            request.country
+        ).any { it != null }
+
+        val patched = existing.copy(
+            brand = request.brand ?: existing.brand,
+            model = request.model ?: existing.model,
+            category = request.category ?: existing.category,
+            fuelType = request.fuelType ?: existing.fuelType,
+            ratePerHour = request.ratePerHour ?: existing.ratePerHour,
+            addressLine1 = request.addressLine1 ?: existing.addressLine1,
+            addressLine2 = request.addressLine2 ?: existing.addressLine2,
+            postalCode = request.postalCode ?: existing.postalCode,
+            city = request.city ?: existing.city,
+            country = request.country ?: existing.country,
+            locationLat = request.locationLat ?: existing.locationLat,
+            locationLng = request.locationLng ?: existing.locationLng,
+            isActive = request.isActive ?: existing.isActive
+        )
+
+        val requestedLat = request.locationLat
+        val requestedLng = request.locationLng
+
+        val resolved = when {
+            addressChanged -> geocodeAddress(
+                addressLine1 = patched.addressLine1,
+                addressLine2 = patched.addressLine2,
+                postalCode = patched.postalCode,
+                city = patched.city,
+                country = patched.country
+            )
+            requestedLat != null && requestedLng != null -> GeocodingResult(
+                latitude = requestedLat,
+                longitude = requestedLng,
+                formattedAddress = patched.formattedAddress ?: ""
+            )
+            else -> GeocodingResult(
+                latitude = patched.locationLat,
+                longitude = patched.locationLng,
+                formattedAddress = patched.formattedAddress ?: ""
+            )
+        }
+
+        val updated = patched.copy(
+            locationLat = resolved.latitude,
+            locationLng = resolved.longitude,
+            formattedAddress = if (addressChanged) resolved.formattedAddress else patched.formattedAddress
+        )
+
+        return repo.update(id, updated)
+    }
+
+    private suspend fun geocodeAddress(
+        addressLine1: String?,
+        addressLine2: String?,
+        postalCode: String?,
+        city: String?,
+        country: String?
+    ): GeocodingResult {
+        val requiredFields = listOf(addressLine1, postalCode, city, country)
+        if (requiredFields.any { it.isNullOrBlank() }) {
+            throw IllegalArgumentException("Address is incomplete")
+        }
+
+        val address = listOfNotNull(
+            addressLine1?.trim()?.takeIf { it.isNotBlank() },
+            addressLine2?.trim()?.takeIf { it.isNotBlank() },
+            postalCode?.trim()?.takeIf { it.isNotBlank() },
+            city?.trim()?.takeIf { it.isNotBlank() },
+            country?.trim()?.takeIf { it.isNotBlank() }
+        ).joinToString(", ")
+
+        return geocodingService.geocode(address)
+    }
 
     /**
      * Filters cars based on multiple criteria.

@@ -28,8 +28,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import dev.koenv.rentmycar.app.screens.car.AddCarScreen
 import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
+import dev.koenv.rentmycar.app.screens.map.MapScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
+import dev.koenv.rentmycar.app.location.rememberUserLocation
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
 import dev.koenv.rentmycar.app.ui.components.Icon
@@ -75,19 +77,26 @@ class HomeScreen : Screen {
         var filtersExpanded by remember { mutableStateOf(filterState.filtersExpanded) }
         var showAvailableOnly by remember { mutableStateOf(filterState.showAvailableOnly) }
         var searchNearby by remember { mutableStateOf(filterState.searchNearby) }
-        var userLat by remember { mutableStateOf(52.3676) }
-        var userLng by remember { mutableStateOf(4.9041) }
+        var userLat by remember { mutableStateOf(filterState.userLat) }
+        var userLng by remember { mutableStateOf(filterState.userLng) }
         var maxDistance by remember { mutableStateOf(filterState.maxDistance) }
         var brandFilter by remember { mutableStateOf(filterState.brandFilter) }
         var selectedCategories by remember { mutableStateOf(filterState.selectedCategories) }
         var minRate by remember { mutableStateOf(filterState.minRate) }
         var maxRate by remember { mutableStateOf(filterState.maxRate) }
         var sortBy by remember { mutableStateOf(filterState.sortBy) }
-        
-        LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
+
+        rememberUserLocation { lat, lng ->
+            userLat = lat
+            userLng = lng
+        }
+
+        LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, userLat, userLng, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
             filterState.filtersExpanded = filtersExpanded
             filterState.showAvailableOnly = showAvailableOnly
             filterState.searchNearby = searchNearby
+            filterState.userLat = userLat
+            filterState.userLng = userLng
             filterState.maxDistance = maxDistance
             filterState.brandFilter = brandFilter
             filterState.selectedCategories = selectedCategories
@@ -192,15 +201,36 @@ class HomeScreen : Screen {
                                 style = AppTheme.typography.titleLarge,
                                 modifier = Modifier.weight(1f).padding(start = 8.dp)
                             )
-                            IconButton(
-                                onClick = { refreshCars() },
-                                enabled = !isRefreshing,
-                                variant = IconButtonVariant.Ghost
-                            ) {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = "Refresh cars"
-                                )
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        navigator.push(
+                                            MapScreen(
+                                                cars = filteredCars,
+                                                userLat = userLat,
+                                                userLng = userLng,
+                                                showNearby = searchNearby,
+                                                maxDistanceKm = maxDistance
+                                            )
+                                        )
+                                    },
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(
+                                        Icons.Default.Map,
+                                        contentDescription = "View map"
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { refreshCars() },
+                                    enabled = !isRefreshing,
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Refresh cars"
+                                    )
+                                }
                             }
                         }
                     }

@@ -6,6 +6,12 @@ CREATE TABLE Car (
     category TEXT NOT NULL,
     fuelType TEXT,
     ratePerHour TEXT NOT NULL,
+    addressLine1 TEXT,
+    addressLine2 TEXT,
+    postalCode TEXT,
+    city TEXT,
+    country TEXT,
+    formattedAddress TEXT,
     locationLat REAL,
     locationLng REAL,
     isActive INTEGER NOT NULL DEFAULT 1,
@@ -41,13 +47,13 @@ SELECT * FROM Car WHERE category = ?;
 
 -- Insert or replace car
 insertOrReplace:
-INSERT OR REPLACE INTO Car(id, brand, model, category, fuelType, ratePerHour, locationLat, locationLng, isActive, ownerId, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO Car(id, brand, model, category, fuelType, ratePerHour, addressLine1, addressLine2, postalCode, city, country, formattedAddress, locationLat, locationLng, isActive, ownerId, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Update car
 update:
 UPDATE Car 
-SET brand = ?, model = ?, category = ?, fuelType = ?, ratePerHour = ?, locationLat = ?, locationLng = ?, isActive = ?, updatedAt = ?
+SET brand = ?, model = ?, category = ?, fuelType = ?, ratePerHour = ?, addressLine1 = ?, addressLine2 = ?, postalCode = ?, city = ?, country = ?, formattedAddress = ?, locationLat = ?, locationLng = ?, isActive = ?, updatedAt = ?
 WHERE id = ?;
 
 -- Delete car by ID

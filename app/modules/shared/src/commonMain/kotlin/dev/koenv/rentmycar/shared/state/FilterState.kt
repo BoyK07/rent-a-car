@@ -8,6 +8,8 @@ data class FilterState(
     var filtersExpanded: Boolean = false,
     var showAvailableOnly: Boolean = true,
     var searchNearby: Boolean = false,
+    var userLat: Double = 52.3676,
+    var userLng: Double = 4.9041,
     var maxDistance: Int = 50, // km
     var brandFilter: String = "",
     var selectedCategories: Set<String> = emptySet(),
