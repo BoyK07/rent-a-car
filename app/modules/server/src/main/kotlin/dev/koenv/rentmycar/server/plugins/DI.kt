@@ -8,6 +8,21 @@ import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
+/**
+ * Configures dependency injection using Koin.
+ * 
+ * Modules registered:
+ * - Application config (Ktor environment configuration)
+ * - Repository module (data access layer)
+ * - Service module (business logic layer)
+ * 
+ * Koin logging level can be controlled via KOIN_LOG_LEVEL environment variable:
+ * - DEBUG: Verbose logging for development
+ * - INFO: Standard logging (default)
+ * - WARN/WARNING: Only warnings
+ * - ERROR: Only errors
+ * - NONE/OFF: No logging
+ */
 fun Application.configureDI() {
     install(Koin) {
         slf4jLogger(
@@ -25,14 +40,14 @@ fun Application.configureDI() {
 
         modules(
             module {
-                // provide Ktor config
+                // Provide Ktor config for services that need it
                 single { environment.config }
             },
 
-            // repositories
+            // Data access layer
             repositoryModule,
 
-            // services
+            // Business logic layer
             serviceModule
         )
     }

@@ -5,6 +5,11 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
+/**
+ * Color palette for the application theme.
+ * Defines semantic color tokens for light and dark modes.
+ */
+
 val Black: Color = Color(0xFF000000)
 val Gray900: Color = Color(0xFF282828)
 val Gray800: Color = Color(0xFF4b4b4b)
@@ -173,6 +178,13 @@ val LocalColors = staticCompositionLocalOf { LightColors }
 val LocalContentColor = compositionLocalOf { Color.Black }
 val LocalContentAlpha = compositionLocalOf { 1f }
 
+/**
+ * Returns the appropriate content color for a given background color.
+ * Used to ensure proper text/icon contrast on different background colors.
+ *
+ * @param backgroundColor The background color to match
+ * @return The appropriate foreground color for contrast
+ */
 fun Colors.contentColorFor(backgroundColor: Color): Color {
     return when (backgroundColor) {
         primary -> onPrimary

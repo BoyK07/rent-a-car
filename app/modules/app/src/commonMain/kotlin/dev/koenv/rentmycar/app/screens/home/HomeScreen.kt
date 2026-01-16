@@ -48,8 +48,16 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.sqrt
 
 /**
- * Home screen displaying a list of available cars with filtering options.
- * Main entry point after authentication.
+ * Home screen displaying available cars with comprehensive filtering and sorting capabilities.
+ * 
+ * Features:
+ * - Car list with real-time filtering
+ * - Multi-criteria filtering (availability, brand, category, price, distance)
+ * - Sort options (price, distance, brand)
+ * - Persistent filter state across navigation
+ * - Refresh capability with pull-to-refresh indicator
+ * - Role-based FAB for adding cars (ADMIN/DRIVER only)
+ * - Distance calculation for nearby search using Haversine formula
  */
 class HomeScreen : Screen {
     @Composable
@@ -64,11 +72,10 @@ class HomeScreen : Screen {
         var isRefreshing by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         
-        // Use persistent filter states from SharedModule
         var filtersExpanded by remember { mutableStateOf(filterState.filtersExpanded) }
         var showAvailableOnly by remember { mutableStateOf(filterState.showAvailableOnly) }
         var searchNearby by remember { mutableStateOf(filterState.searchNearby) }
-        var userLat by remember { mutableStateOf(52.3676) } // Default: Amsterdam
+        var userLat by remember { mutableStateOf(52.3676) }
         var userLng by remember { mutableStateOf(4.9041) }
         var maxDistance by remember { mutableStateOf(filterState.maxDistance) }
         var brandFilter by remember { mutableStateOf(filterState.brandFilter) }
@@ -77,7 +84,6 @@ class HomeScreen : Screen {
         var maxRate by remember { mutableStateOf(filterState.maxRate) }
         var sortBy by remember { mutableStateOf(filterState.sortBy) }
         
-        // Save filter states when they change
         LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
             filterState.filtersExpanded = filtersExpanded
             filterState.showAvailableOnly = showAvailableOnly
@@ -97,7 +103,6 @@ class HomeScreen : Screen {
         
         val scope = rememberCoroutineScope()
         
-        // Refresh function
         val refreshCars = {
             scope.launch {
                 isRefreshing = true
@@ -111,7 +116,6 @@ class HomeScreen : Screen {
             }
         }
         
-        // Fetch cars on screen load
         LaunchedEffect(Unit) {
             scope.launch {
                 carsRepository.getCars().onSuccess { carsList ->
@@ -124,35 +128,29 @@ class HomeScreen : Screen {
             }
         }
         
-        // Filter cars based on criteria
         val filteredCars = remember(cars, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
             var result = cars
             
-            // Filter by availability
             if (showAvailableOnly) {
                 result = result.filter { it.isActive }
             }
             
-            // Filter by brand
             if (brandFilter.isNotBlank()) {
                 result = result.filter { car ->
                     car.brand.contains(brandFilter, ignoreCase = true)
                 }
             }
             
-            // Filter by category
             if (selectedCategories.isNotEmpty()) {
                 result = result.filter { car ->
                     car.category?.label in selectedCategories
                 }
             }
             
-            // Filter by rate range
             result = result.filter { car ->
                 car.ratePerHour >= minRate && car.ratePerHour <= maxRate
             }
             
-            // Filter by distance (nearby search)
             if (searchNearby) {
                 result = result.filter { car ->
                     val distance = calculateDistance(
@@ -163,7 +161,6 @@ class HomeScreen : Screen {
                 }
             }
             
-            // Sort results
             when (sortBy) {
                 "Price (Low to High)" -> result.sortedBy { it.ratePerHour }
                 "Price (High to Low)" -> result.sortedByDescending { it.ratePerHour }
@@ -233,14 +230,12 @@ class HomeScreen : Screen {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Collapsible Filter section
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        // Filter header with expand/collapse
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -262,7 +257,6 @@ class HomeScreen : Screen {
                             Divider(modifier = Modifier.padding(vertical = 8.dp))
                             
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                // Available only filter
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -277,7 +271,6 @@ class HomeScreen : Screen {
                                 
                                 Divider()
                                 
-                                // Brand filter
                                 OutlinedTextField(
                                     value = brandFilter,
                                     onValueChange = { brandFilter = it },
@@ -289,7 +282,6 @@ class HomeScreen : Screen {
                                 
                                 Divider()
                                 
-                                // Category filter
                                 Column {
                                     Text(
                                         text = "Category",
@@ -318,7 +310,6 @@ class HomeScreen : Screen {
                                 
                                 Divider()
                                 
-                                // Rate range filter
                                 Column {
                                     Text(
                                         text = "Rate per hour: €${minRate.toInt()} - €${maxRate.toInt()}",
@@ -346,7 +337,6 @@ class HomeScreen : Screen {
                                 
                                 Divider()
                                 
-                                // Nearby search filter
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -378,7 +368,6 @@ class HomeScreen : Screen {
                                 
                                 Divider()
                                 
-                                // Sort options
                                 Column {
                                     Text(
                                         text = "Sort by",
@@ -419,7 +408,6 @@ class HomeScreen : Screen {
                     }
                 }
                 
-                // Results count
                 Text(
                     text = "${filteredCars.size} car${if (filteredCars.size != 1) "s" else ""} found",
                     style = AppTheme.typography.bodyMedium,
@@ -427,7 +415,6 @@ class HomeScreen : Screen {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
                 
-                // Content area
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -513,7 +500,15 @@ class HomeScreen : Screen {
     }
 }
 
-// Helper function to calculate distance between two coordinates (Haversine formula)
+/**
+ * Calculates the great-circle distance between two geographic coordinates using the Haversine formula.
+ *
+ * @param lat1 Latitude of first point in degrees
+ * @param lon1 Longitude of first point in degrees
+ * @param lat2 Latitude of second point in degrees
+ * @param lon2 Longitude of second point in degrees
+ * @return Distance in kilometers
+ */
 private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
     val earthRadiusKm = 6371.0
     val dLat = Math.toRadians(lat2 - lat1)
@@ -525,6 +520,15 @@ private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Do
     return earthRadiusKm * c
 }
 
+/**
+ * Renders a single car item in the list with relevant details.
+ *
+ * @param car The car data to display
+ * @param userLat User's current latitude for distance calculation
+ * @param userLng User's current longitude for distance calculation
+ * @param showDistance Whether to display distance from user
+ * @param onClick Callback when the car item is clicked
+ */
 @Composable
 private fun CarListItem(
     car: CarDto,

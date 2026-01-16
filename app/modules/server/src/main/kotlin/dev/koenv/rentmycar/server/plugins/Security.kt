@@ -9,6 +9,22 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.callid.*
 
+/**
+ * Configures JWT-based authentication and authorization.
+ * 
+ * JWT Configuration:
+ * - Algorithm: HMAC256 with server secret
+ * - Claims: userId (UUID string), role (MEMBER/DRIVER/ADMIN)
+ * - Verification: audience, issuer, and signature validation
+ * 
+ * Token validation:
+ * - Requires both userId and role claims to be present
+ * - Returns 401 Unauthorized with unified ApiResponse format if invalid
+ * - Includes call ID in error response for debugging
+ * 
+ * All configuration values (audience, domain, realm, secret) are loaded
+ * from application.conf under the "jwt" section.
+ */
 fun Application.configureSecurity() {
     val config = environment.config
     val jwtAudience = config.property("jwt.audience").getString()
@@ -31,7 +47,6 @@ fun Application.configureSecurity() {
                 val role = cred.payload.getClaim("role").asString()
                 if (userId != null && role != null) JWTPrincipal(cred.payload) else null
             }
-            // Return unified ApiResponse format for 401 errors
             challenge { _, _ ->
                 call.respondError(
                     status = HttpStatusCode.Unauthorized,

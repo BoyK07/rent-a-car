@@ -1,5 +1,17 @@
 package dev.koenv.rentmycar.server.routes.api.v1.users
 
+/**
+ * User management API routes.
+ * 
+ * All endpoints require authentication.
+ * 
+ * Endpoints:
+ * - GET /api/v1/users/{id} - Get user by ID (own profile or admin only)
+ * - PATCH /api/v1/users/{id} - Update user (own profile or admin only)
+ * - DELETE /api/v1/users/{id} - Delete user (admin only)
+ * - GET /api/v1/users - List all users (admin only)
+ */
+
 import dev.koenv.rentmycar.server.domain.service.UserService
 import dev.koenv.rentmycar.server.mappers.user.toDto
 import dev.koenv.rentmycar.server.routes.RouteRegistrar

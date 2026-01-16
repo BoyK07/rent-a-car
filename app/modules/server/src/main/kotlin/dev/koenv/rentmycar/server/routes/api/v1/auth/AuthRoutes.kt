@@ -1,5 +1,13 @@
 package dev.koenv.rentmycar.server.routes.api.v1.auth
 
+/**
+ * Authentication API routes.
+ * 
+ * Endpoints:
+ * - POST /api/v1/auth/register - Register new user account
+ * - POST /api/v1/auth/login - Login and receive JWT token
+ */
+
 import dev.koenv.rentmycar.server.domain.service.AuthService
 import dev.koenv.rentmycar.server.routes.RouteRegistrar
 import dev.koenv.rentmycar.server.util.requireBodyOrFail

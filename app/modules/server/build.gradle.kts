@@ -8,6 +8,8 @@ group = "dev.koenv.rentmycar.server"
 version = "1.0.0"
 
 kotlin {
+    jvmToolchain(21)
+    
     sourceSets {
         all {
             languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
@@ -88,6 +90,7 @@ dependencies {
     // =====================================
     implementation(libs.mariadb4j)
     implementation(libs.mariadb.jdbc)
+    implementation(libs.h2)
 
     // =====================================
     // Database - Connection Pooling
@@ -125,3 +128,4 @@ tasks.register<JavaExec>("generateMigrations") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("dev.koenv.rentmycar.server.storage.db.MigrationGenerator")
 }
+

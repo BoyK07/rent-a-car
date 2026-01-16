@@ -10,7 +10,10 @@ import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.screens.reservation.ReservationListScreen
 
 /**
- * Navigation destinations for bottom navigation bar.
+ * Navigation destination definitions for the application's bottom navigation bar.
+ * 
+ * Provides type-safe navigation targets with associated icons and titles.
+ * Admin destination is conditionally available based on user role.
  */
 sealed class NavDestination(
     val title: String,
@@ -43,8 +46,10 @@ sealed class NavDestination(
     
     companion object {
         /**
-         * Get all navigation destinations.
-         * Admin destination is conditionally included based on user role.
+         * Returns all available navigation destinations.
+         * 
+         * @param isAdmin Whether the user has admin role
+         * @return List of navigation destinations, including Admin if user is admin
          */
         fun getDestinations(isAdmin: Boolean = false): List<NavDestination> {
             return buildList {

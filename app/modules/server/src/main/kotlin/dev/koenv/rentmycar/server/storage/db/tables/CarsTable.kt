@@ -1,5 +1,21 @@
 package dev.koenv.rentmycar.server.storage.db.tables
 
+/**
+ * Exposed table definition for cars.
+ * 
+ * Columns:
+ * - id: UUID primary key (auto-generated)
+ * - ownerId: Foreign key to users table
+ * - brand: Car manufacturer
+ * - model: Car model name
+ * - category: Car category enum (SEDAN, SUV, etc.)
+ * - fuelType: Fuel type enum (GASOLINE, DIESEL, ELECTRIC, HYBRID) - nullable
+ * - ratePerHour: Rental rate in currency per hour (decimal 10,2)
+ * - locationLat: Latitude coordinate
+ * - locationLng: Longitude coordinate
+ * - isActive: Whether car is available for rental (default: true)
+ */
+
 import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
 import org.jetbrains.exposed.v1.core.Table

@@ -36,8 +36,20 @@ import dev.koenv.rentmycar.shared.dto.car.CreateCarRequestDto
 import kotlinx.coroutines.launch
 
 /**
- * Screen for adding a new car to the platform.
- * Only accessible to users with DRIVER or ADMIN roles.
+ * Screen for adding a new car listing to the platform.
+ * 
+ * Features:
+ * - Form with all required car details (brand, model, category, fuel, location, pricing)
+ * - Category selection dropdown (ICE, BEV, FCEV)
+ * - Fuel type selection dropdown
+ * - Location coordinate input
+ * - Active status toggle
+ * - Form validation
+ * - Save with loading state
+ * - Error display
+ * - Navigation back on success
+ * 
+ * Access: DRIVER and ADMIN roles only
  */
 class AddCarScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)

@@ -1,5 +1,17 @@
 package dev.koenv.rentmycar.server.routes.api.v1.cars
 
+/**
+ * Car management API routes.
+ * 
+ * Endpoints:
+ * - POST /api/v1/cars - Create new car listing (authenticated)
+ * - GET /api/v1/cars/{id} - Get car details (public)
+ * - PUT /api/v1/cars/{id} - Update car (owner or admin only)
+ * - PATCH /api/v1/cars/{id} - Partial update car (owner or admin only)
+ * - DELETE /api/v1/cars/{id} - Delete car (owner or admin only)
+ * - GET /api/v1/cars - Search/list cars with filters (public)
+ */
+
 import com.ionspin.kotlin.bignum.decimal.BigDecimal
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.domain.service.SearchService

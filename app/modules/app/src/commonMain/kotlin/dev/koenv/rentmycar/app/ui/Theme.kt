@@ -11,6 +11,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import dev.koenv.rentmycar.app.ui.foundation.ripple
 
+/**
+ * Application theme object providing access to colors and typography.
+ * Use AppTheme.colors and AppTheme.typography to access theme values.
+ */
 object AppTheme {
     val colors: Colors
         @ReadOnlyComposable @Composable
@@ -21,6 +25,13 @@ object AppTheme {
         get() = LocalTypography.current
 }
 
+/**
+ * Main theme composable that provides color scheme and typography.
+ * Supports light and dark modes with automatic system theme detection.
+ *
+ * @param isDarkTheme Whether to use dark theme colors
+ * @param content The content to be themed
+ */
 @Composable
 fun AppTheme(
     isDarkTheme: Boolean = isSystemInDarkTheme(),

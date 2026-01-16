@@ -3,8 +3,15 @@ package dev.koenv.rentmycar.shared.http
 import io.ktor.http.*
 
 /**
- * Represents an API-level exception with an HTTP status,
- * a human-readable message, and an optional machine-readable code.
+ * Custom exception for API errors with structured error information.
+ * 
+ * Provides:
+ * - HTTP status code for error categorization
+ * - Machine-readable error code (auto-generated or custom)
+ * - Human-readable error message
+ * - Optional additional details
+ * 
+ * Used throughout the application for consistent error handling.
  */
 class ApiException(
     val http: HttpStatusCode,

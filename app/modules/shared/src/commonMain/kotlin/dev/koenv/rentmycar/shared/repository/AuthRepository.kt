@@ -15,8 +15,21 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Repository for authentication operations.
- * Manages auth state, token storage, and API calls.
+ * Repository managing user authentication state and operations.
+ * 
+ * Features:
+ * - Login/logout with JWT token management
+ * - User registration with optional role selection
+ * - Authentication state tracking (Loading, Authenticated, Unauthenticated)
+ * - Current user state flow
+ * - Session persistence across app restarts
+ * - Automatic token inclusion in HTTP requests
+ * - User data storage/restoration
+ * 
+ * Authentication flow:
+ * 1. User logs in → token saved to storage → auth state = Authenticated
+ * 2. App restart → token loaded from storage → user data restored
+ * 3. User logs out → token cleared → auth state = Unauthenticated
  */
 class AuthRepository(
     private val authApi: AuthApi,
@@ -39,8 +52,8 @@ class AuthRepository(
     }
     
     /**
-     * Checks if user is authenticated based on stored token.
-     * Also attempts to restore user data from storage.
+     * Validates authentication status on repository initialization.
+     * Attempts to restore user session from stored token and user data.
      */
     private fun checkAuthStatus() {
         val hasToken = authTokenStorage.hasToken()

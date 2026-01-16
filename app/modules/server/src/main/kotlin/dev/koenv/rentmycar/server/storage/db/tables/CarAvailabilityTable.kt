@@ -1,5 +1,17 @@
 package dev.koenv.rentmycar.server.storage.db.tables
 
+/**
+ * Exposed table definition for car availability windows.
+ * 
+ * Columns:
+ * - id: UUID primary key (auto-generated)
+ * - carId: Foreign key to cars table
+ * - startTime: Window start (datetime)
+ * - endTime: Window end (datetime)
+ * 
+ * Defines time ranges when a car is available for booking.
+ */
+
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.datetime
 

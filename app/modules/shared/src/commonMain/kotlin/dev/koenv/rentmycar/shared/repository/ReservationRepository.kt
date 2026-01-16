@@ -288,7 +288,6 @@ class ReservationRepository(
      * Get driving sessions for a reservation.
      */
     suspend fun getDrivingSessions(reservationId: Uuid): Result<List<DrivingSessionDto>> {
-        // TODO: Implement local caching for driving sessions if needed
         return reservationApi.getDrivingSessions(reservationId)
     }
     
@@ -299,7 +298,6 @@ class ReservationRepository(
         reservationId: Uuid,
         request: CreateDrivingSessionRequestDto
     ): Result<DrivingSessionDto> {
-        // TODO: Implement local caching for driving sessions if needed
         return reservationApi.createDrivingSession(reservationId, request)
     }
 }

@@ -1,5 +1,12 @@
 package dev.koenv.rentmycar.server.routes.api.v1.availability
 
+/**
+ * Car availability search API routes.
+ * 
+ * Endpoints:
+ * - GET /api/v1/availability - Search cars available in time range and location
+ */
+
 import dev.koenv.rentmycar.server.domain.service.CarAvailabilityService
 import dev.koenv.rentmycar.server.mappers.car.toAvailabilityDto
 import dev.koenv.rentmycar.server.routes.RouteRegistrar

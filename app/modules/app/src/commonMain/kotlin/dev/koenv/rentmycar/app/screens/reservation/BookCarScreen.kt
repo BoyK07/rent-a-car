@@ -44,11 +44,21 @@ import dev.koenv.rentmycar.shared.dto.reservation.ReservationQuoteRequestDto
 import dev.koenv.rentmycar.shared.dto.reservation.ReservationQuoteResponseDto
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 /**
- * Screen for booking a car with availability check and quote preview.
- * Shows pricing, duration, and allows user to create a reservation.
+ * Car booking screen with real-time price quotes and reservation creation.
+ * 
+ * Features:
+ * - Car details display
+ * - Date and time selection for booking period
+ * - Real-time price quote calculation
+ * - Quote breakdown (rate, hours, total cost)
+ * - Quick duration selection chips (2h, 4h, 8h, 1 day)
+ * - Create reservation with loading state
+ * - Validation and error handling
+ * - Navigation to reservation details after successful booking
  */
 data class BookCarScreen(
     val carId: Uuid
@@ -67,7 +77,6 @@ data class BookCarScreen(
         var isCreatingReservation by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         
-        // Default to booking for 2 hours starting from next hour
         val now = Clock.System.now()
         val nextHour = now.plus(1, DateTimeUnit.HOUR, TimeZone.UTC)
         val defaultStart = nextHour.toLocalDateTime(TimeZone.UTC).let {
@@ -117,14 +126,12 @@ data class BookCarScreen(
         
         val scope = rememberCoroutineScope()
         
-        // Load car details
         LaunchedEffect(carId) {
             scope.launch {
                 carsRepository.getCar(carId).onSuccess { carDto ->
                     car = carDto
                     isLoadingCar = false
                     
-                    // Automatically get quote with default times
                     isLoadingQuote = true
                     val quoteRequest = ReservationQuoteRequestDto(
                         carId = carId,

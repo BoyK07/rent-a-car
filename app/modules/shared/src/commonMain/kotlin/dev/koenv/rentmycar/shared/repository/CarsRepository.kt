@@ -16,9 +16,24 @@ import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
 /**
- * Repository for car operations.
- * Implements offline-first pattern: DB → UI → API sync.
- * Cars are persisted to local database and synced with API.
+ * Repository for car listing operations with offline-first architecture.
+ * 
+ * Features:
+ * - Offline-first pattern: Local DB → UI → API sync in background
+ * - Real-time Flow updates from database
+ * - Car CRUD operations (create, read, update, delete)
+ * - Search with filters (brand, category, location, etc.)
+ * - Photo management (upload via API)
+ * - Availability window management
+ * - View tracking in local storage
+ * - Background sync with API
+ * 
+ * Data flow:
+ * 1. Read from local DB immediately (fast, works offline)
+ * 2. Display cached data to user
+ * 3. Sync with API in background
+ * 4. Update local DB with fresh data
+ * 5. UI automatically updates via Flow
  */
 class CarsRepository(
     private val carsApi: CarsApi,
@@ -29,10 +44,10 @@ class CarsRepository(
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
     /**
-     * Fetches cars from database first (for offline support),
-     * then refreshes from API in background.
+     * Returns real-time Flow of active cars from local database.
+     * UI automatically updates when database changes.
      * 
-     * Returns Flow of cars that updates as data syncs.
+     * @return Flow emitting updated car lists on any database change
      */
     fun getCarsFlow(): Flow<List<CarDto>> {
         // Return database flow that updates in real-time
@@ -40,11 +55,13 @@ class CarsRepository(
     }
     
     /**
-     * Fetches a list of cars with optional filtering.
-     * Offline-first: returns cached data immediately, then syncs with API.
+     * Fetches cars with offline-first strategy.
+     * Returns cached data immediately if available, then syncs with API.
+     * 
+     * @param forceRefresh Skip cache and fetch directly from API
+     * @return Result containing list of cars or error
      */
     suspend fun getCars(forceRefresh: Boolean = false): Result<List<CarDto>> {
-        // If not forcing refresh and we have cached data, return it
         if (!forceRefresh) {
             val cachedCars = carDao.getAllCars()
             if (cachedCars.isNotEmpty()) {

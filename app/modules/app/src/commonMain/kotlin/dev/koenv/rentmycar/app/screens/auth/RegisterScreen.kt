@@ -32,8 +32,16 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
- * Registration screen for new users.
- * Allows optional role selection (MEMBER or DRIVER).
+ * User registration screen for creating new accounts.
+ * 
+ * Features:
+ * - Full name, email, password, and confirmation fields
+ * - Optional role selection (MEMBER or DRIVER)
+ * - Form validation (required fields, password matching, minimum length)
+ * - Error display for validation and server errors
+ * - Loading state during registration
+ * - Auto-navigation to HomeScreen upon successful registration
+ * - Navigation back to LoginScreen for existing users
  */
 class RegisterScreen : Screen {
     @Composable
@@ -46,13 +54,12 @@ class RegisterScreen : Screen {
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var confirmPassword by remember { mutableStateOf("") }
-        var selectedRole by remember { mutableStateOf<Role?>(Role.MEMBER) } // Default to MEMBER
+        var selectedRole by remember { mutableStateOf<Role?>(Role.MEMBER) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var isLoading by remember { mutableStateOf(false) }
         
         val scope = rememberCoroutineScope()
         
-        // Navigate to home when authenticated
         LaunchedEffect(authState) {
             if (authState == AuthState.Authenticated) {
                 navigator.replaceAll(HomeScreen())
@@ -82,7 +89,6 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Name field
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -101,7 +107,6 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -121,7 +126,6 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -142,7 +146,6 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Confirm Password field
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -192,7 +195,6 @@ class RegisterScreen : Screen {
                 )
             }
             
-            // Error message
             if (errorMessage != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -204,10 +206,8 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Register button
             Button(
                 onClick = {
-                    // Validation
                     when {
                         name.isBlank() || email.isBlank() || password.isBlank() -> {
                             errorMessage = "Please fill in all required fields"
@@ -257,7 +257,6 @@ class RegisterScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Navigate to login
             Button(
                 onClick = { navigator.pop() },
                 enabled = !isLoading,

@@ -22,19 +22,37 @@ import dev.koenv.rentmycar.shared.state.FilterState
 import io.ktor.client.*
 
 /**
- * Shared module dependencies container.
- * Provides singleton instances of repositories, APIs, storage, and database.
+ * Shared module dependency injection container.
  * 
- * IMPORTANT: Call initialize() with platform context before using repositories.
+ * Provides singleton instances of:
+ * - Repositories (Auth, Cars, User, Reservation)
+ * - API clients (AuthApi, CarsApi, UserApi, etc.)
+ * - Storage (AuthToken, AppData, Theme preferences)
+ * - Database (SQLite with SQLDelight)
+ * - HTTP client (Ktor with JWT authentication)
+ * - Filter state (persistent across navigation)
+ * 
+ * **Initialization:**
+ * Must call `initialize(DatabaseDriverFactory)` with platform-specific driver before use.
+ * Must call `configure(String)` to set API base URL (environment-aware).
+ * 
+ * **Usage:**
+ * ```kotlin
+ * // In Android Application.onCreate()
+ * SharedModule.initialize(DatabaseDriverFactory(context))
+ * SharedModule.configure(BuildConfig.API_BASE_URL)
+ * 
+ * // Access repositories
+ * val authRepo = SharedModule.authRepository
+ * val carsRepo = SharedModule.carsRepository
+ * ```
  */
 object SharedModule {
     // Persistent filter state (survives navigation)
     val filterState: FilterState = FilterState()
     // Default base URL - uses localhost for development
-    // Configure for production using configure() method or environment detection
     private var baseUrl: String = detectBaseUrl()
     
-    // Database - must be initialized with platform context
     private var _databaseManager: DatabaseManager? = null
     val databaseManager: DatabaseManager
         get() = _databaseManager ?: error("Database not initialized. Call SharedModule.initialize() first.")
@@ -44,7 +62,6 @@ object SharedModule {
     private val _appDataStorage: AppDataStorage by lazy { AppDataStorage() }
     private val _themePreferences: ThemePreferences by lazy { ThemePreferences() }
     
-    // HTTP Client - mutable so it can be recreated on logout/login
     private var _httpClient: HttpClient? = null
     private val httpClient: HttpClient
         get() {

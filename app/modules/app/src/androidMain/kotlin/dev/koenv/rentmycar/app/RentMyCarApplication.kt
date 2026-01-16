@@ -5,26 +5,17 @@ import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.db.DatabaseDriverFactory
 import dev.koenv.rentmycar.shared.storage.SettingsFactory
 
+/**
+ * Android Application class for Rent My Car.
+ * Initializes shared module components including database and settings storage.
+ * Configures API base URL from BuildConfig (environment-aware: debug/release).
+ */
 class RentMyCarApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // Initialize platform-specific storage
         SettingsFactory.init(applicationContext)
-        
-        // Initialize database
         SharedModule.initialize(DatabaseDriverFactory(applicationContext))
-        
-        // Configure API base URL
-        configureApiUrl()
-    }
-    
-    private fun configureApiUrl() {
-        // Development: `localhost` and `10.0.2.2` allowed for local development
-        SharedModule.configure("http://10.0.2.2:8080")
-        // SharedModule.configure("http://localhost:8080")
-        
-        // Production configuration:
-        // SharedModule.configure("https://api.rentmycar.com")
+        SharedModule.configure(BuildConfig.API_BASE_URL)
     }
 }

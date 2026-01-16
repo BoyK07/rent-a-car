@@ -10,6 +10,18 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for CarAvailability entity operations.
+ * 
+ * Uses Exposed ORM with CarAvailabilityTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - Standard CRUD operations
+ * - Queries by car ID to retrieve all availability windows for a car
+ * 
+ * Availability windows define time ranges when a car can be rented.
+ */
 class CarAvailabilityRepositoryImpl {
 
     suspend fun findAll(): List<CarAvailability> = dbQuery {
