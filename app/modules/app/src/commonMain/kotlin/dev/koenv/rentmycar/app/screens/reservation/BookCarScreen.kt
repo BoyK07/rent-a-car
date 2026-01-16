@@ -1,12 +1,23 @@
 package dev.koenv.rentmycar.app.screens.reservation
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,7 +28,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
-import dev.koenv.rentmycar.app.ui.components.ButtonVariant
 import dev.koenv.rentmycar.app.ui.components.HorizontalDivider
 import dev.koenv.rentmycar.app.ui.components.Icon
 import dev.koenv.rentmycar.app.ui.components.IconButton
@@ -44,6 +54,7 @@ data class BookCarScreen(
     val carId: Uuid
 ) : Screen {
     @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
@@ -66,6 +77,43 @@ data class BookCarScreen(
         
         var startDateTime by remember { mutableStateOf(defaultStart) }
         var endDateTime by remember { mutableStateOf(defaultEnd) }
+        var validationMessage by remember { mutableStateOf<String?>(null) }
+
+        var showStartDatePicker by remember { mutableStateOf(false) }
+        var showEndDatePicker by remember { mutableStateOf(false) }
+        var showStartTimeMenu by remember { mutableStateOf(false) }
+        var showEndTimeMenu by remember { mutableStateOf(false) }
+
+        val timeOptions = remember {
+            buildList {
+                for (hour in 0..23) {
+                    for (minute in listOf(0, 15, 30, 45)) {
+                        add(hour to minute)
+                    }
+                }
+            }
+        }
+
+        fun formatTime(hour: Int, minute: Int): String =
+            "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+
+        val pickerFieldColors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AppTheme.colors.primary,
+            unfocusedBorderColor = AppTheme.colors.outline,
+            focusedLabelColor = AppTheme.colors.primary,
+            unfocusedLabelColor = AppTheme.colors.onSurfaceVariant,
+            cursorColor = AppTheme.colors.primary,
+            disabledBorderColor = AppTheme.colors.outline,
+            disabledLabelColor = AppTheme.colors.onSurfaceVariant,
+            disabledTextColor = AppTheme.colors.onSurface,
+            disabledTrailingIconColor = AppTheme.colors.onSurfaceVariant
+        )
+
+        fun updateStartKeepingDuration(newStart: LocalDateTime) {
+            val duration = endDateTime.toInstant(TimeZone.UTC) - startDateTime.toInstant(TimeZone.UTC)
+            startDateTime = newStart
+            endDateTime = newStart.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
+        }
         
         val scope = rememberCoroutineScope()
         
@@ -97,24 +145,30 @@ data class BookCarScreen(
             }
         }
         
-        val updateQuote = {
-            if (startDateTime < endDateTime) {
-                isLoadingQuote = true
-                errorMessage = null
-                scope.launch {
-                    val quoteRequest = ReservationQuoteRequestDto(
-                        carId = carId,
-                        startTime = startDateTime,
-                        endTime = endDateTime
-                    )
-                    reservationRepository.getQuote(quoteRequest).onSuccess { quoteResponse ->
-                        quote = quoteResponse
-                        isLoadingQuote = false
-                    }.onFailure { error ->
-                        errorMessage = error.message ?: "Failed to get price quote"
-                        quote = null
-                        isLoadingQuote = false
-                    }
+        val updateQuote: () -> Unit = updateQuote@{
+            if (startDateTime >= endDateTime) {
+                validationMessage = "End time must be after start time"
+                quote = null
+                isLoadingQuote = false
+                return@updateQuote
+            }
+
+            validationMessage = null
+            isLoadingQuote = true
+            errorMessage = null
+            scope.launch {
+                val quoteRequest = ReservationQuoteRequestDto(
+                    carId = carId,
+                    startTime = startDateTime,
+                    endTime = endDateTime
+                )
+                reservationRepository.getQuote(quoteRequest).onSuccess { quoteResponse ->
+                    quote = quoteResponse
+                    isLoadingQuote = false
+                }.onFailure { error ->
+                    errorMessage = error.message ?: "Failed to get price quote"
+                    quote = null
+                    isLoadingQuote = false
                 }
             }
         }
@@ -226,121 +280,249 @@ data class BookCarScreen(
                                         style = AppTheme.typography.titleLarge
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    
-                                    // Start Time with adjustment buttons
-                                    Text("Start Time", style = AppTheme.typography.bodyMedium)
+
+                                    // Start date picker dialog
+                                    if (showStartDatePicker) {
+                                        val startDatePickerState = rememberDatePickerState(
+                                            initialSelectedDateMillis = startDateTime.date
+                                                .atStartOfDayIn(TimeZone.UTC)
+                                                .toEpochMilliseconds()
+                                        )
+                                        DatePickerDialog(
+                                            onDismissRequest = { showStartDatePicker = false },
+                                            confirmButton = {
+                                                TextButton(
+                                                    onClick = {
+                                                        val millis = startDatePickerState.selectedDateMillis
+                                                        if (millis != null) {
+                                                            val selectedDate = Instant.fromEpochMilliseconds(millis)
+                                                                .toLocalDateTime(TimeZone.UTC)
+                                                                .date
+                                                            updateStartKeepingDuration(
+                                                                LocalDateTime(
+                                                                    selectedDate.year,
+                                                                    selectedDate.monthNumber,
+                                                                    selectedDate.dayOfMonth,
+                                                                    startDateTime.hour,
+                                                                    startDateTime.minute,
+                                                                    0,
+                                                                    0
+                                                                )
+                                                            )
+                                                            updateQuote()
+                                                        }
+                                                        showStartDatePicker = false
+                                                    }
+                                                ) { Text("OK") }
+                                            },
+                                            dismissButton = {
+                                                TextButton(onClick = { showStartDatePicker = false }) { Text("Cancel") }
+                                            }
+                                        ) {
+                                            DatePicker(state = startDatePickerState)
+                                        }
+                                    }
+
+                                    // End date picker dialog
+                                    if (showEndDatePicker) {
+                                        val endDatePickerState = rememberDatePickerState(
+                                            initialSelectedDateMillis = endDateTime.date
+                                                .atStartOfDayIn(TimeZone.UTC)
+                                                .toEpochMilliseconds()
+                                        )
+                                        DatePickerDialog(
+                                            onDismissRequest = { showEndDatePicker = false },
+                                            confirmButton = {
+                                                TextButton(
+                                                    onClick = {
+                                                        val millis = endDatePickerState.selectedDateMillis
+                                                        if (millis != null) {
+                                                            val selectedDate = Instant.fromEpochMilliseconds(millis)
+                                                                .toLocalDateTime(TimeZone.UTC)
+                                                                .date
+                                                            endDateTime = LocalDateTime(
+                                                                selectedDate.year,
+                                                                selectedDate.monthNumber,
+                                                                selectedDate.dayOfMonth,
+                                                                endDateTime.hour,
+                                                                endDateTime.minute,
+                                                                0,
+                                                                0
+                                                            )
+                                                            updateQuote()
+                                                        }
+                                                        showEndDatePicker = false
+                                                    }
+                                                ) { Text("OK") }
+                                            },
+                                            dismissButton = {
+                                                TextButton(onClick = { showEndDatePicker = false }) { Text("Cancel") }
+                                            }
+                                        ) {
+                                            DatePicker(state = endDatePickerState)
+                                        }
+                                    }
+
+                                    Text("Start", style = AppTheme.typography.bodyMedium)
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Text(
-                                            text = formatDateTime(startDateTime),
-                                            style = AppTheme.typography.bodyLarge,
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable { showStartDatePicker = true }
+                                        ) {
+                                            OutlinedTextField(
+                                                value = startDateTime.date.toString(),
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                enabled = false,
+                                                label = { Text("Start date") },
+                                                trailingIcon = {
+                                                    Icon(Icons.Filled.Event, contentDescription = "Pick start date")
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = pickerFieldColors,
+                                                singleLine = true
+                                            )
+                                        }
+
+                                        ExposedDropdownMenuBox(
+                                            expanded = showStartTimeMenu,
+                                            onExpandedChange = { showStartTimeMenu = it },
                                             modifier = Modifier.weight(1f)
-                                        )
-                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            // Decrease start time by 1 hour
-                                            Button(
-                                                onClick = {
-                                                    val duration = endDateTime.toInstant(TimeZone.UTC) - startDateTime.toInstant(TimeZone.UTC)
-                                                    startDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                        .minus(1, DateTimeUnit.HOUR, TimeZone.UTC)
-                                                        .toLocalDateTime(TimeZone.UTC)
-                                                    endDateTime = startDateTime.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
-                                                    updateQuote()
+                                        ) {
+                                            OutlinedTextField(
+                                                value = formatTime(startDateTime.hour, startDateTime.minute),
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                label = { Text("Start time") },
+                                                trailingIcon = {
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = showStartTimeMenu)
                                                 },
-                                                variant = ButtonVariant.Secondary
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .menuAnchor(),
+                                                colors = pickerFieldColors,
+                                                singleLine = true
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = showStartTimeMenu,
+                                                onDismissRequest = { showStartTimeMenu = false }
                                             ) {
-                                                Text("-1h")
-                                            }
-                                            // Increase start time by 1 hour
-                                            Button(
-                                                onClick = {
-                                                    val duration = endDateTime.toInstant(TimeZone.UTC) - startDateTime.toInstant(TimeZone.UTC)
-                                                    startDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                        .plus(1, DateTimeUnit.HOUR, TimeZone.UTC)
-                                                        .toLocalDateTime(TimeZone.UTC)
-                                                    endDateTime = startDateTime.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
-                                                    updateQuote()
-                                                },
-                                                variant = ButtonVariant.Secondary
-                                            ) {
-                                                Text("+1h")
-                                            }
-                                            // Increase start time by 1 day
-                                            Button(
-                                                onClick = {
-                                                    val duration = endDateTime.toInstant(TimeZone.UTC) - startDateTime.toInstant(TimeZone.UTC)
-                                                    startDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                        .plus(1, DateTimeUnit.DAY, TimeZone.UTC)
-                                                        .toLocalDateTime(TimeZone.UTC)
-                                                    endDateTime = startDateTime.toInstant(TimeZone.UTC).plus(duration).toLocalDateTime(TimeZone.UTC)
-                                                    updateQuote()
-                                                },
-                                                variant = ButtonVariant.Secondary
-                                            ) {
-                                                Text("+1d")
+                                                timeOptions.forEach { (h, m) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(formatTime(h, m)) },
+                                                        onClick = {
+                                                            updateStartKeepingDuration(
+                                                                LocalDateTime(
+                                                                    startDateTime.year,
+                                                                    startDateTime.monthNumber,
+                                                                    startDateTime.dayOfMonth,
+                                                                    h,
+                                                                    m,
+                                                                    0,
+                                                                    0
+                                                                )
+                                                            )
+                                                            showStartTimeMenu = false
+                                                            updateQuote()
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
-                                    
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    
-                                    Text("End Time", style = AppTheme.typography.bodyMedium)
-                                    Text(
-                                        text = formatDateTime(endDateTime),
-                                        style = AppTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(vertical = 4.dp)
-                                    )
-                                    
+
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    
-                                    // Quick duration buttons using FilterChip
-                                    // Calculate current duration in hours
-                                    val currentDurationHours = remember(startDateTime, endDateTime) {
-                                        val start = startDateTime.toInstant(TimeZone.UTC)
-                                        val end = endDateTime.toInstant(TimeZone.UTC)
-                                        val duration = end - start
-                                        duration.inWholeHours
-                                    }
-                                    
+
+                                    Text("End", style = AppTheme.typography.bodyMedium)
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        FilterChip(
-                                            selected = currentDurationHours == 2L,
-                                            onClick = {
-                                                endDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                    .plus(2, DateTimeUnit.HOUR, TimeZone.UTC)
-                                                    .toLocalDateTime(TimeZone.UTC)
-                                                updateQuote()
-                                            },
-                                            label = { Text("2 hours") },
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clickable { showEndDatePicker = true }
+                                        ) {
+                                            OutlinedTextField(
+                                                value = endDateTime.date.toString(),
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                enabled = false,
+                                                label = { Text("End date") },
+                                                trailingIcon = {
+                                                    Icon(Icons.Filled.Event, contentDescription = "Pick end date")
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = pickerFieldColors,
+                                                singleLine = true
+                                            )
+                                        }
+
+                                        ExposedDropdownMenuBox(
+                                            expanded = showEndTimeMenu,
+                                            onExpandedChange = { showEndTimeMenu = it },
                                             modifier = Modifier.weight(1f)
-                                        )
-                                        FilterChip(
-                                            selected = currentDurationHours == 4L,
-                                            onClick = {
-                                                endDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                    .plus(4, DateTimeUnit.HOUR, TimeZone.UTC)
-                                                    .toLocalDateTime(TimeZone.UTC)
-                                                updateQuote()
-                                            },
-                                            label = { Text("4 hours") },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        FilterChip(
-                                            selected = currentDurationHours == 24L,
-                                            onClick = {
-                                                endDateTime = startDateTime.toInstant(TimeZone.UTC)
-                                                    .plus(1, DateTimeUnit.DAY, TimeZone.UTC)
-                                                    .toLocalDateTime(TimeZone.UTC)
-                                                updateQuote()
-                                            },
-                                            label = { Text("1 day") },
-                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            OutlinedTextField(
+                                                value = formatTime(endDateTime.hour, endDateTime.minute),
+                                                onValueChange = {},
+                                                readOnly = true,
+                                                label = { Text("End time") },
+                                                trailingIcon = {
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = showEndTimeMenu)
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .menuAnchor(),
+                                                colors = pickerFieldColors,
+                                                singleLine = true
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = showEndTimeMenu,
+                                                onDismissRequest = { showEndTimeMenu = false }
+                                            ) {
+                                                timeOptions.forEach { (h, m) ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(formatTime(h, m)) },
+                                                        onClick = {
+                                                            endDateTime = LocalDateTime(
+                                                                endDateTime.year,
+                                                                endDateTime.monthNumber,
+                                                                endDateTime.dayOfMonth,
+                                                                h,
+                                                                m,
+                                                                0,
+                                                                0
+                                                            )
+                                                            showEndTimeMenu = false
+                                                            updateQuote()
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Text(
+                                        text = "Selected: ${formatDateTime(startDateTime)} → ${formatDateTime(endDateTime)}",
+                                        style = AppTheme.typography.bodySmall,
+                                        color = AppTheme.colors.onSurface.copy(alpha = 0.7f)
+                                    )
+
+                                    if (validationMessage != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = validationMessage!!,
+                                            color = AppTheme.colors.error,
+                                            style = AppTheme.typography.bodySmall
                                         )
                                     }
                                 }
