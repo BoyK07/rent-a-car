@@ -1,0 +1,20 @@
+ktor:
+  application:
+    modules:
+      - dev.koenv.rentmycar.server.ApplicationKt.module
+  deployment:
+    port: 8080
+  development: true
+  environment: test
+
+jwt:
+  domain: "https://127.0.0.1:8080/"
+  audience: "rentmycar-api"
+  realm: "Access to RentMyCar API"
+  secret: "test-secret-key-for-testing-purposes-only"
+
+db:
+  provider: "h2"                        # H2 in-memory database for tests
+  name: "test"
+  reset: true                           # Always reset database for tests
+  seed: false                           # Don't seed in tests (unless explicitly needed)

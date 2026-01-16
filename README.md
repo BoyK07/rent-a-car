@@ -136,7 +136,7 @@ docker build -f app/modules/server/Dockerfile -t rentmycar-server:latest .
 docker run -d \
   --name rentmycar-server \
   -p 8080:8080 \
-  -e DB_TYPE=external \
+  -e DB_PROVIDER=mariadb \
   -e DB_HOST=your-db-host \
   -e DB_USER=rentmycar \
   -e DB_PASSWORD=your-password \
@@ -158,7 +158,43 @@ Optie 3 - Direct met JAR:
 java -jar rentmycar-server-{version}.jar
 ```
 
-Zie [Docker Deployment Guide](docs/docker-deployment.md) voor gedetailleerde instructies.
+Zie [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) voor gedetailleerde instructies.
+
+---
+
+## Database Configuratie
+
+Het project ondersteunt meerdere database providers voor verschillende use cases:
+
+- **H2 In-Memory** (standaard): Voor snelle lokale ontwikkeling en testen zonder externe database
+- **H2 File-Based**: Voor lokale ontwikkeling met data persistentie
+- **MariaDB External**: Voor productie en staging omgevingen
+
+### Snelle Start
+
+Standaard gebruikt de applicatie H2 in-memory – gewoon starten zonder extra configuratie:
+```bash
+cd app
+./gradlew :server:run
+```
+
+Voor andere database providers, gebruik omgevingsvariabelen:
+```bash
+# H2 file-based (met persistentie)
+DB_PROVIDER=h2-file ./gradlew :server:run
+
+# Externe MariaDB
+DB_PROVIDER=mariadb DB_HOST=localhost DB_PASSWORD=your-password ./gradlew :server:run
+```
+
+### Voor Tests
+
+Tests gebruiken automatisch H2 in-memory met een schone database:
+```bash
+./gradlew :server:test
+```
+
+Zie [Database Configuration Guide](docs/DATABASE_CONFIGURATION.md) voor gedetailleerde configuratie opties, troubleshooting, en best practices.
 
 ---
 

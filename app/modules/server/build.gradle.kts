@@ -90,6 +90,7 @@ dependencies {
     // =====================================
     implementation(libs.mariadb4j)
     implementation(libs.mariadb.jdbc)
+    implementation(libs.h2)
 
     // =====================================
     // Database - Connection Pooling

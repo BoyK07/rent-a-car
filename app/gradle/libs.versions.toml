@@ -23,6 +23,7 @@ coil = "3.3.0"
 # =====================================
 exposed = "1.0.0-rc-4"
 mariadb = "3.3.1"
+h2 = "2.3.232"
 argon2 = "2.12"
 prometheus = "1.16.2"
 hikari = "7.0.2"
@@ -184,6 +185,7 @@ exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datet
 # =====================================
 mariadb4j = { module = "ch.vorburger.mariaDB4j:mariaDB4j", version.ref = "mariadb" }
 mariadb-jdbc = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
 
 # =====================================
 # Database - Connection Pool
