@@ -11,6 +11,17 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for User entity CRUD operations.
+ * 
+ * Uses Exposed ORM with UsersTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - CRUD operations (create, read, update, delete)
+ * - Email lookup for authentication
+ * - Existence checks for validation
+ */
 class UserRepositoryImpl {
 
     suspend fun findAll(): List<User> = dbQuery {

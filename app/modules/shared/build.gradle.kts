@@ -13,11 +13,15 @@ version = "1.0.0"
 kotlin {
     androidTarget {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 
-    jvm { /* JVM specific configuration */ }
+    jvm { 
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+        }
+    }
 
     sourceSets {
         val commonMain = sourceSets.getByName("commonMain")
@@ -105,8 +109,8 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     defaultConfig {

@@ -38,8 +38,17 @@ import dev.koenv.rentmycar.shared.dto.reservation.ReservationDto
 import kotlinx.coroutines.launch
 
 /**
- * Screen displaying reservations for cars owned by the current user.
- * Allows car owners to view and confirm pending reservations.
+ * Screen showing reservations for cars owned by the current user.
+ * 
+ * Features:
+ * - View all reservations for user's cars
+ * - Tab-based filtering by status (All, Pending, Confirmed, Cancelled)
+ * - Car identification for multi-car owners
+ * - Reservation confirmation for pending bookings
+ * - Clickable items for detail view
+ * - Loading and empty states
+ * - Refresh capability
+ * - Only accessible to users with DRIVER or ADMIN role
  */
 class MyCarReservationsScreen : Screen {
     @Composable

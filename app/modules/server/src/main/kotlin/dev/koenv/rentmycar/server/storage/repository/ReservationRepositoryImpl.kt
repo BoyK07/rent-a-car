@@ -12,6 +12,17 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for Reservation entity operations.
+ * 
+ * Uses Exposed ORM with ReservationsTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - Standard CRUD operations
+ * - Queries by renter or car
+ * - Time range overlap detection for booking conflicts
+ */
 class ReservationRepositoryImpl {
 
     suspend fun findAll(): List<Reservation> = dbQuery {
@@ -84,6 +95,19 @@ class ReservationRepositoryImpl {
             .map(::toEntity)
     }
 
+    /**
+     * Finds reservations that overlap with the given time range.
+     * 
+     * Uses interval overlap logic:
+     * Two intervals [A,B] and [C,D] overlap if: A <= D AND B >= C
+     * 
+     * This is used to detect booking conflicts when creating new reservations.
+     * 
+     * @param carId The car to check
+     * @param startTime Start of the time range to check
+     * @param endTime End of the time range to check
+     * @return List of reservations that overlap with the given time range
+     */
     suspend fun findByCarIdAndTimeRange(
         carId: Uuid,
         startTime: LocalDateTime,

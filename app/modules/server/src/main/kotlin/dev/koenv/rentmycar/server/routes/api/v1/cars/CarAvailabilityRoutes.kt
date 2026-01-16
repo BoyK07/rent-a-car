@@ -1,5 +1,17 @@
 package dev.koenv.rentmycar.server.routes.api.v1.cars
 
+/**
+ * Car availability window management API routes.
+ * 
+ * Endpoints:
+ * - POST /api/v1/cars/{carId}/availability - Create availability window (owner or admin only)
+ * - GET /api/v1/cars/{carId}/availability - List availability windows (public)
+ * - GET /api/v1/cars/{carId}/availability/{id} - Get specific window (public)
+ * - PUT /api/v1/cars/{carId}/availability/{id} - Update window (owner or admin only)
+ * - PATCH /api/v1/cars/{carId}/availability/{id} - Partial update window (owner or admin only)
+ * - DELETE /api/v1/cars/{carId}/availability/{id} - Delete window (owner or admin only)
+ */
+
 import dev.koenv.rentmycar.server.domain.service.CarAvailabilityService
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.mappers.car.applyAvailabilityPatch

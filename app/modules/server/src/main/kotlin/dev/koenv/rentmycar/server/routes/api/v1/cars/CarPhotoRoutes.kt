@@ -1,5 +1,16 @@
 package dev.koenv.rentmycar.server.routes.api.v1.cars
 
+/**
+ * Car photo management API routes.
+ * 
+ * Endpoints:
+ * - POST /api/v1/cars/{carId}/photos - Upload photo (owner or admin only)
+ * - GET /api/v1/cars/{carId}/photos - List all photos for car (public)
+ * - GET /api/v1/cars/{carId}/photos/{id} - Get specific photo (public)
+ * - DELETE /api/v1/cars/{carId}/photos/{id} - Delete photo (owner or admin only)
+ * - PATCH /api/v1/cars/{carId}/photos/{id}/primary - Set as primary photo (owner or admin only)
+ */
+
 import dev.koenv.rentmycar.server.domain.service.CarPhotoService
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.mappers.car.applyPatch

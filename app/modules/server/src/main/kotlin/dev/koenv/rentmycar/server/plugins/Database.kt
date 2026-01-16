@@ -10,17 +10,30 @@ import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.io.File
+import java.net.Socket
 
 private var embeddedDb: DB? = null
 
+/**
+ * Configures database connection and migrations.
+ * 
+ * Supports two database modes:
+ * - **external**: Connect to existing MariaDB instance (production)
+ * - **embedded**: Start MariaDB4j embedded instance (development/testing)
+ * 
+ * Uses Flyway for schema migrations from classpath:migrations.
+ * 
+ * Optional DB_RESET environment variable or db.reset config will:
+ * - Clean the database (DROP all tables)
+ * - Re-run all migrations from scratch
+ * - WARNING: Only use in development!
+ */
 fun Application.configureDatabase() {
     initDatabase(environment.config)
 
-    // Listen for shutdown
     monitor.subscribe(ApplicationStopped) {
         stopEmbeddedDatabase()
     }
-
 }
 
 private fun initDatabase(config: ApplicationConfig) {
@@ -45,9 +58,29 @@ private fun initDatabase(config: ApplicationConfig) {
         "embedded" -> {
             val baseDir = File("build/mariadb4j")
             val dbName = dbConfig.propertyOrNull("name")?.getString() ?: "rentmycar"
+            val port = 3306
+
+            if (isPortInUse(port)) {
+                throw RuntimeException(
+                    "ERROR: Port $port is already in use!\n" +
+                    "\n" +
+                    "The embedded database cannot start because port $port is occupied.\n" +
+                    "This could be:\n" +
+                    "  • An orphaned MariaDB process from a previous run\n" +
+                    "  • Another MariaDB/MySQL instance\n" +
+                    "  • Any other application using port $port\n" +
+                    "\n" +
+                    "To resolve this:\n" +
+                    "  1. Find and stop the process using port $port\n" +
+                    "     Windows: tasklist | findstr :$port  (then: taskkill /F /PID <pid>)\n" +
+                    "     Linux/Mac: lsof -i :$port  (then: kill -9 <pid>)\n" +
+                    "  2. Or change the database port in application.yaml\n" +
+                    "  3. Or use an external database instead of embedded mode\n"
+                )
+            }
 
             val configBuilder = DBConfigurationBuilder.newBuilder()
-            configBuilder.setPort(3306) // consider 0 to auto-pick a free port in dev
+            configBuilder.setPort(port)
             configBuilder.setBaseDir(baseDir)
             configBuilder.setDataDir(File(baseDir, "data"))
             configBuilder.setDeletingTemporaryBaseAndDataDirsOnShutdown(false)
@@ -56,7 +89,6 @@ private fun initDatabase(config: ApplicationConfig) {
             db.start()
             embeddedDb = db
 
-            val port = configBuilder.port
             val url =
                 "jdbc:mariadb://localhost:$port/$dbName?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             db.createDB(dbName)
@@ -67,39 +99,52 @@ private fun initDatabase(config: ApplicationConfig) {
         else -> error("Unsupported database type: $type")
     }
 
-    // Exposed connect
     Database.connect(url, driver, user, password)
 
-    // Flags (env or application.conf). Only use in dev!
     val reset = System.getenv("DB_RESET")?.equals("true", ignoreCase = true)
         ?: config.propertyOrNull("db.reset")?.getString()?.equals("true", true)
         ?: false
 
     val flyway = Flyway.configure()
         .dataSource(url, user, password)
-        .locations("classpath:migrations")   // keep your folder
-        .cleanDisabled(false)                // allow clean (careful: dev only)
+        .locations("classpath:migrations")
+        .cleanDisabled(false)
         .load()
 
     when {
         reset -> {
-            // migrate:fresh
             flyway.clean()
             flyway.migrate()
         }
-
         else -> {
             flyway.migrate()
         }
     }
 }
 
-/** Gracefully stop MariaDB4j on shutdown. */
-fun stopEmbeddedDatabase() {
-    embeddedDb?.stop()
+private fun isPortInUse(port: Int): Boolean {
+    return try {
+        Socket("localhost", port).use { true }
+    } catch (e: Exception) {
+        false
+    }
 }
 
-/** Run Exposed transactions on IO dispatcher. */
+fun stopEmbeddedDatabase() {
+    embeddedDb?.let { db ->
+        try {
+            db.stop()
+            embeddedDb = null
+        } catch (e: Exception) {
+            System.err.println("Error stopping embedded database: ${e.message}")
+        }
+    }
+}
+
+/**
+ * Executes a database query on the IO dispatcher.
+ * Wraps Exposed transaction for safe concurrent access.
+ */
 suspend fun <T> dbQuery(block: () -> T): T =
     withContext(Dispatchers.IO) {
         transaction { block() }

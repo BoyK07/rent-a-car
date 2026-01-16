@@ -1,5 +1,22 @@
 package dev.koenv.rentmycar.server.routes.api.v1.reservations
 
+/**
+ * Reservation and driving session management API routes.
+ * 
+ * Reservation endpoints:
+ * - POST /api/v1/reservations - Create reservation (authenticated)
+ * - GET /api/v1/reservations/{id} - Get reservation details (owner/renter or admin)
+ * - PATCH /api/v1/reservations/{id} - Update reservation (owner/renter or admin)
+ * - DELETE /api/v1/reservations/{id} - Delete reservation (owner/renter or admin)
+ * - GET /api/v1/reservations/user/{userId} - List user's reservations (own or admin)
+ * - GET /api/v1/reservations/car/{carId} - List car's reservations (owner or admin)
+ * 
+ * Driving session endpoints:
+ * - POST /api/v1/reservations/{id}/sessions - Record driving session (renter)
+ * - GET /api/v1/reservations/{id}/sessions - List sessions for reservation
+ * - GET /api/v1/sessions/{id} - Get specific session details
+ */
+
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.domain.service.DrivingSessionService
 import dev.koenv.rentmycar.server.domain.service.ReservationService

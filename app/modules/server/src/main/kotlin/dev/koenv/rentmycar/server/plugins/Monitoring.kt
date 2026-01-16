@@ -7,10 +7,24 @@ import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.micrometer.prometheus.PrometheusConfig
-import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlin.uuid.Uuid
 
+/**
+ * Configures monitoring and observability for the application.
+ * 
+ * Features:
+ * - **Prometheus Metrics**: Collects application metrics (requests, latency, errors)
+ *   exposed at `/metrics-micrometer` endpoint
+ * - **Call ID**: Generates unique request IDs for tracing
+ *   - Reads from X-Request-Id header if present
+ *   - Generates UUID if not provided
+ *   - Echoes back in response header
+ * - **Call Logging**: Logs all requests with call ID for debugging
+ * 
+ * Useful for production monitoring, debugging, and performance analysis.
+ */
 fun Application.configureMonitoring() {
     val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 

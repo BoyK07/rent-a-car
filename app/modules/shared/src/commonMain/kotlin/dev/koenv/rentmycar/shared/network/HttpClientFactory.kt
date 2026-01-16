@@ -12,7 +12,20 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
 /**
- * Factory to create configured Ktor HTTP client with JWT authentication.
+ * Factory for creating configured Ktor HTTP client instances.
+ * 
+ * Client configuration includes:
+ * - Base URL setting (environment-aware: debug/release)
+ * - JWT Bearer authentication with automatic token injection
+ * - JSON content negotiation with lenient parsing
+ * - Request/response logging for debugging
+ * - Timeout configuration (30s request, 15s connect)
+ * - Type-safe routing with Resources plugin
+ * 
+ * Authentication flow:
+ * - Loads token from AuthTokenStorage for each request
+ * - Automatically adds Authorization: Bearer {token} header
+ * - No refresh token support (user must re-login on expiry)
  */
 object HttpClientFactory {
     

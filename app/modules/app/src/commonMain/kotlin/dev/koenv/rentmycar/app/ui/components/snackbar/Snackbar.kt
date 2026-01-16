@@ -67,7 +67,6 @@ fun Snackbar(
     val dismissActionComposable: (@Composable () -> Unit)? =
         if (snackbarData.visuals.withDismissAction) {
             @Composable {
-                // TODO: Add close button here.
                 Box(
                     modifier =
                         Modifier

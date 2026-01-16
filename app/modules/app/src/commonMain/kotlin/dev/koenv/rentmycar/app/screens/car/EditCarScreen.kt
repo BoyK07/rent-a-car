@@ -37,8 +37,16 @@ import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
 /**
- * Screen for editing car details.
- * Only accessible to car owners (DRIVER role) and admins.
+ * Screen for editing existing car details.
+ * 
+ * Features:
+ * - Pre-populated form fields with current car data
+ * - Partial update support (PATCH)
+ * - Category and fuel type dropdowns
+ * - Active/inactive status toggle
+ * - Form validation with error display
+ * - Save with loading state
+ * - Only accessible to car owners (DRIVER role) and admins
  */
 data class EditCarScreen(
     val carId: Uuid

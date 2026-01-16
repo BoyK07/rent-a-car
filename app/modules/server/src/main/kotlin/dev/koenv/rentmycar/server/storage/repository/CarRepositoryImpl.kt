@@ -13,6 +13,22 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for Car entity CRUD and search operations.
+ * 
+ * Uses Exposed ORM with CarsTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - Standard CRUD operations
+ * - Advanced search with multiple filters (category, fuel, price, brand)
+ * - Geolocation-based search (nearby cars within radius)
+ * - Search result counting
+ * 
+ * Geographic calculations use approximate conversion:
+ * - 1 degree latitude = 111.32 km
+ * - 1 degree longitude = 111.32 km * cos(latitude)
+ */
 class CarRepositoryImpl {
 
     suspend fun findAll(): List<Car> = dbQuery {
@@ -66,6 +82,23 @@ class CarRepositoryImpl {
 
     suspend fun count(): Long = dbQuery { CarsTable.selectAll().count() }
 
+    /**
+     * Searches cars with optional filters.
+     * 
+     * Location filtering uses bounding box approximation:
+     * - Calculates min/max latitude and longitude based on maxDistance
+     * - Filters cars within this rectangular boundary
+     * 
+     * @param latitude User's latitude for distance filtering
+     * @param longitude User's longitude for distance filtering
+     * @param maxDistance Maximum distance in kilometers
+     * @param minPrice Minimum hourly rate
+     * @param maxPrice Maximum hourly rate
+     * @param category Car category filter
+     * @param fuelType Fuel type filter
+     * @param brand Brand name (case-insensitive partial match)
+     * @return List of cars matching all provided filters
+     */
     suspend fun searchCars(
         latitude: Double?,
         longitude: Double?,
@@ -108,7 +141,6 @@ class CarRepositoryImpl {
             query.andWhere { CarsTable.locationLng lessEq maxLng }
         }
 
-        // Future geolocation optimization could go here with bounding-box math
         query.map(::toEntity)
     }
 
@@ -157,6 +189,15 @@ class CarRepositoryImpl {
         query.count().toInt()
     }
 
+    /**
+     * Finds cars within a specified radius of a location.
+     * 
+     * @param latitude Center latitude
+     * @param longitude Center longitude
+     * @param radius Search radius in kilometers
+     * @param limit Maximum number of results
+     * @return Up to limit cars within the radius
+     */
     suspend fun findNearbyCars(
         latitude: Double,
         longitude: Double,

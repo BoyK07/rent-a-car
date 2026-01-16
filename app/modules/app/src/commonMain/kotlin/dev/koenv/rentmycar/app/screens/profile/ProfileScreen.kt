@@ -39,8 +39,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Profile screen displaying user information and settings.
- * Shows role, email, stored data count, and logout functionality.
+ * User profile screen displaying account information and application settings.
+ * 
+ * Features:
+ * - User information display (name, email, role)
+ * - Dark mode toggle
+ * - Data storage metrics (database row counts)
+ * - Edit profile navigation
+ * - Admin panel access (ADMIN role only)
+ * - Logout with confirmation dialog
+ * - Profile refresh capability
  */
 class ProfileScreen : Screen {
     @Composable
@@ -58,7 +66,6 @@ class ProfileScreen : Screen {
         
         val scope = rememberCoroutineScope()
         
-        // Refresh function
         val refreshProfile = {
             scope.launch {
                 isRefreshing = true
@@ -72,14 +79,12 @@ class ProfileScreen : Screen {
             }
         }
         
-        // Try to get user from auth state first
         LaunchedEffect(Unit) {
             val currentUser = authRepository.currentUser.value
             if (currentUser != null) {
                 user = currentUser
                 isLoading = false
             } else {
-                // Try to restore user from token
                 scope.launch {
                     authRepository.restoreUserSession().onSuccess { restoredUser ->
                         user = restoredUser

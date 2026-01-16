@@ -20,8 +20,14 @@ import dev.koenv.rentmycar.app.ui.layout.MainLayoutBottomBar
 import dev.koenv.rentmycar.shared.SharedModule
 
 /**
- * Admin screen showing available admin functions.
- * Accessible only to users with ADMIN role.
+ * Admin dashboard providing access to administrative functions.
+ * 
+ * Features:
+ * - User management navigation
+ * - System statistics cards (placeholder for future metrics)
+ * - Role-based access control (ADMIN only)
+ * - Bottom navigation integration
+ * - Clean card-based layout
  */
 class AdminScreen : Screen {
     @Composable

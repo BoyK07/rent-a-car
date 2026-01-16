@@ -40,8 +40,16 @@ import dev.koenv.rentmycar.shared.dto.reservation.ReservationDto
 import kotlinx.coroutines.launch
 
 /**
- * Screen displaying user's reservations where they are the renter.
- * Shows active, past, and cancelled reservations with filtering.
+ * Screen displaying user's reservations as a renter with status-based filtering.
+ * 
+ * Features:
+ * - Tab-based filtering (All, Active, Past, Cancelled)
+ * - Reservation list with car details, dates, status, and pricing
+ * - Clickable reservation items for detail view
+ * - Loading and empty states
+ * - Refresh capability
+ * - Color-coded status indicators
+ * - Sorted by start time (newest first)
  */
 class ReservationListScreen : Screen {
     @Composable

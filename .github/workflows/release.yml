@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    name: Build and Release All Artifacts
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./app/gradlew
+      
+      - name: Create release keystore
+        run: |
+          # Create a release keystore for signing
+          keytool -genkey -v -keystore app/release.keystore -storepass android -alias release -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Rent My Car, OU=Development, O=Koenv, L=Unknown, S=Unknown, C=NL"
+          echo "Keystore created successfully"
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=${{ inputs.tag }}
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=${VERSION#v}" >> $GITHUB_OUTPUT
+      
+      - name: Update version in build files
+        run: |
+          VERSION_NAME=${{ steps.get_version.outputs.VERSION_NAME }}
+          # Update Android app version
+          sed -i "s/versionName = \"[0-9.]*\"/versionName = \"$VERSION_NAME\"/" app/modules/app/build.gradle.kts
+          # Update server version
+          sed -i "s/version = \"[0-9.]*\"/version = \"$VERSION_NAME\"/" app/modules/server/build.gradle.kts
+          # Verify the changes
+          grep "versionName" app/modules/app/build.gradle.kts || echo "Warning: Could not update Android version"
+          grep "version =" app/modules/server/build.gradle.kts | head -1 || echo "Warning: Could not update server version"
+      
+      - name: Build Android release APK
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: release
+          KEY_PASSWORD: android
+        run: |
+          cd app
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+      
+      - name: Build Android release AAB
+        env:
+          KEYSTORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: release
+          KEY_PASSWORD: android
+        run: |
+          cd app
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace
+      
+      - name: Build server fat JAR
+        run: |
+          cd app
+          ./gradlew :server:buildFatJar --no-daemon --stacktrace
+      
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p release-artifacts
+          
+          if ls app/modules/app/build/outputs/apk/release/*.apk 1> /dev/null 2>&1; then
+            cp app/modules/app/build/outputs/apk/release/*.apk release-artifacts/rentmycar-${{ steps.get_version.outputs.VERSION_NAME }}.apk
+            echo "Android APK copied"
+          else
+            echo "Warning: Android APK not found"
+          fi
+          
+          if ls app/modules/app/build/outputs/bundle/release/*.aab 1> /dev/null 2>&1; then
+            cp app/modules/app/build/outputs/bundle/release/*.aab release-artifacts/rentmycar-${{ steps.get_version.outputs.VERSION_NAME }}.aab
+            echo "Android AAB copied"
+          else
+            echo "Warning: Android AAB not found"
+          fi
+          
+          if ls app/modules/server/build/libs/*-all.jar 1> /dev/null 2>&1; then
+            cp app/modules/server/build/libs/*-all.jar release-artifacts/rentmycar-server-${{ steps.get_version.outputs.VERSION_NAME }}.jar
+            echo "Server JAR copied"
+          else
+            echo "Warning: Server JAR not found"
+          fi
+          
+          if [ -z "$(ls -A release-artifacts)" ]; then
+            echo "Error: No artifacts were created!"
+            exit 1
+          fi
+          
+          echo "Release artifacts:"
+          ls -lh release-artifacts/
+      
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          ## Rent My Car - Release ${{ steps.get_version.outputs.VERSION }}
+          
+          ### Available Downloads
+          
+          #### Android App
+          - **APK**: `rentmycar-${{ steps.get_version.outputs.VERSION_NAME }}.apk` - Install directly on Android devices
+          - **AAB**: `rentmycar-${{ steps.get_version.outputs.VERSION_NAME }}.aab` - For Google Play Store deployment
+          
+          #### Server
+          - **JAR**: `rentmycar-server-${{ steps.get_version.outputs.VERSION_NAME }}.jar` - Executable server JAR with all dependencies
+          
+          ### Installation
+          
+          **Android App (APK)**:
+          1. Download the APK file
+          2. Enable "Install from unknown sources" in Android settings
+          3. Install the APK on your device
+          
+          **Server (JAR)**:
+          ```bash
+          java -jar rentmycar-server-${{ steps.get_version.outputs.VERSION_NAME }}.jar
+          ```
+          
+          ### System Requirements
+          
+          **Android App**:
+          - Android 7.0 (API 24) or higher
+          - Minimum 100MB free space
+          
+          **Server**:
+          - Java 21 or higher
+          - MariaDB/MySQL database
+          
+          EOF
+          cat release-notes.md
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.get_version.outputs.VERSION }}
+          path: release-artifacts/
+          retention-days: 90

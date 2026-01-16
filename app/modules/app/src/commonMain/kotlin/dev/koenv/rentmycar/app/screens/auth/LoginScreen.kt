@@ -29,7 +29,14 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
- * Login screen for user authentication.
+ * User authentication screen for logging into the application.
+ * 
+ * Features:
+ * - Email and password input fields
+ * - Form validation with error display
+ * - Loading state during authentication
+ * - Auto-navigation to HomeScreen upon successful authentication
+ * - Navigation to RegisterScreen for new users
  */
 class LoginScreen : Screen {
     @Composable
@@ -45,7 +52,6 @@ class LoginScreen : Screen {
         
         val scope = rememberCoroutineScope()
         
-        // Navigate to home when authenticated
         LaunchedEffect(authState) {
             if (authState == AuthState.Authenticated) {
                 navigator.replaceAll(HomeScreen())
@@ -77,7 +83,6 @@ class LoginScreen : Screen {
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -97,7 +102,6 @@ class LoginScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -116,7 +120,6 @@ class LoginScreen : Screen {
                 )
             )
             
-            // Error message
             if (errorMessage != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -128,7 +131,6 @@ class LoginScreen : Screen {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Login button
             Button(
                 onClick = {
                     if (email.isBlank() || password.isBlank()) {
@@ -166,7 +168,6 @@ class LoginScreen : Screen {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Navigate to register
             Button(
                 onClick = { navigator.push(RegisterScreen()) },
                 enabled = !isLoading,

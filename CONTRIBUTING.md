@@ -1,4 +1,4 @@
-## 🧩 Development Environment (JetBrains Gateway + Dev Containers)
+## Development Environment (JetBrains Gateway + Dev Containers)
 
 This project uses **JetBrains Gateway** to provide a consistent Docker-based development environment defined by a **Dev Container**.
 
@@ -6,7 +6,7 @@ Gateway lets you open this container directly — without using IntelliJ’s bui
 
 ---
 
-### 🔧 Requirements
+### Requirements
 
 - [JetBrains Gateway](https://www.jetbrains.com/remote-development/gateway/)
 - Docker Desktop (or compatible local Docker engine)
@@ -16,7 +16,7 @@ Gateway lets you open this container directly — without using IntelliJ’s bui
 
 ---
 
-### 🚀 Opening the Project in a Dev Container
+### Opening the Project in a Dev Container
 
 1. **Start JetBrains Gateway**  
    Open the standalone **JetBrains Gateway** app.
@@ -32,7 +32,7 @@ Gateway lets you open this container directly — without using IntelliJ’s bui
 
 ---
 
-### 🧭 Option 1 — *From VSC Project (recommended for first-time setup)*
+### Option 1 — From VSC Project (recommended for first-time setup)
 
 This downloads the repository directly into the Dev Container (no local mounts).
 
@@ -55,7 +55,7 @@ This approach is **faster and more isolated** because it avoids mounting your lo
 
 ---
 
-### 🗂 Option 2 — *From Local Project*
+### Option 2 — From Local Project
 
 Use this if you already have the repository cloned locally.
 

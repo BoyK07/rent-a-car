@@ -1,5 +1,15 @@
 package dev.koenv.rentmycar.server.routes.api.v1.cars
 
+/**
+ * Car cost calculation API routes.
+ * 
+ * All endpoints require authentication.
+ * 
+ * Endpoints:
+ * - POST /api/v1/cars/{id}/cost/total - Calculate total cost of ownership
+ * - POST /api/v1/cars/{id}/cost/per-hour - Calculate hourly rate recommendation
+ */
+
 import dev.koenv.rentmycar.server.domain.service.CarService
 import dev.koenv.rentmycar.server.routes.RouteRegistrar
 import dev.koenv.rentmycar.server.util.requireRole

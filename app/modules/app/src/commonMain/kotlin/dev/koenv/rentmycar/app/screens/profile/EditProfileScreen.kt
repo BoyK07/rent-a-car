@@ -24,8 +24,16 @@ import dev.koenv.rentmycar.shared.dto.user.PatchUserRequestDto
 import kotlinx.coroutines.launch
 
 /**
- * Screen for editing user profile information.
- * Allows users to edit their name and email (not role or password).
+ * Screen for editing user profile information (name and email).
+ * 
+ * Features:
+ * - Pre-filled form with current user data
+ * - Name and email editing (password change not supported)
+ * - Input validation with error display
+ * - Loading state during data fetch and save
+ * - PATCH request for efficient updates
+ * - Auto-navigation back on successful save
+ * - Requires user to be authenticated
  */
 class EditProfileScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +53,6 @@ class EditProfileScreen : Screen {
         
         val scope = rememberCoroutineScope()
         
-        // Load current user data
         LaunchedEffect(Unit) {
             val currentUser = authRepository.currentUser.value
             if (currentUser != null) {
@@ -166,7 +173,7 @@ class EditProfileScreen : Screen {
                             // Save button
                             Button(
                                 onClick = {
-                                    // Validate
+                                    // Validate inputs
                                     when {
                                         name.isBlank() -> {
                                             errorMessage = "Name cannot be empty"

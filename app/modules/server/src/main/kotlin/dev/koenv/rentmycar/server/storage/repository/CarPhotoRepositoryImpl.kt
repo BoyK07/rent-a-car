@@ -10,6 +10,17 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for CarPhoto entity operations.
+ * 
+ * Uses Exposed ORM with CarPhotosTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - Standard CRUD operations
+ * - Queries by car ID to retrieve all photos for a car
+ * - Primary photo management
+ */
 class CarPhotoRepositoryImpl {
 
     suspend fun findAll(): List<CarPhoto> = dbQuery {

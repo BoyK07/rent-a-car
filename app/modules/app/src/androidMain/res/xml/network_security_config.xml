@@ -11,5 +11,6 @@
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">rentmycar.com</domain>
         <domain includeSubdomains="true">api.rentmycar.com</domain>
+        <domain includeSubdomains="true">rentmycar.koenv.dev</domain>
     </domain-config>
 </network-security-config>

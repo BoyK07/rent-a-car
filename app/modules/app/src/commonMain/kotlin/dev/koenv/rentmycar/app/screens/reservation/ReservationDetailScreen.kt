@@ -33,8 +33,17 @@ import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
 /**
- * Screen showing details of a single reservation.
- * Allows cancellation of pending/confirmed reservations.
+ * Detailed view of a single reservation with cancellation capability.
+ * 
+ * Features:
+ * - Complete reservation information (status, dates, car, pricing)
+ * - Car details with photo display
+ * - Status-specific actions (cancel for pending/confirmed)
+ * - Cancellation confirmation dialog
+ * - Role-based visibility (renter can cancel, owner can view)
+ * - Loading states for reservation and car data
+ * - Error handling with retry option
+ * - Color-coded status badges
  */
 data class ReservationDetailScreen(
     val reservationId: Uuid

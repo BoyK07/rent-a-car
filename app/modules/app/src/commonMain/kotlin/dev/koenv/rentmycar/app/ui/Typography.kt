@@ -9,6 +9,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/**
+ * Typography system for the application.
+ * Defines text styles with consistent sizing, weight, and spacing.
+ * Includes both custom styles (h1-h4, body1-3, label1-3) and Material3-compatible aliases.
+ */
+
 @Composable
 fun fontFamily() = FontFamily.Default
 
@@ -189,6 +195,12 @@ private val defaultTypography =
             ),
     )
 
+/**
+ * Provides the configured typography with the appropriate font family.
+ * Applies the platform-specific font family to all text styles.
+ *
+ * @return Complete typography configuration with font family applied
+ */
 @Composable
 fun provideTypography(): Typography {
     val fontFamily = fontFamily()

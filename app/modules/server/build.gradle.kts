@@ -8,6 +8,8 @@ group = "dev.koenv.rentmycar.server"
 version = "1.0.0"
 
 kotlin {
+    jvmToolchain(21)
+    
     sourceSets {
         all {
             languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
@@ -125,3 +127,4 @@ tasks.register<JavaExec>("generateMigrations") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("dev.koenv.rentmycar.server.storage.db.MigrationGenerator")
 }
+

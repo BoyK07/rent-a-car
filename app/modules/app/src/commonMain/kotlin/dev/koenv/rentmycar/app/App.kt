@@ -16,10 +16,18 @@ import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.repository.AuthState
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+/**
+ * Main application composable that sets up the root UI structure.
+ * 
+ * Responsibilities:
+ * - Configures Coil3 image loading singleton
+ * - Manages theme preferences (light/dark mode)
+ * - Sets up navigation based on authentication state
+ * - Provides root Surface with theme colors
+ */
 @Preview
 @Composable
 fun App() {
-    // Set up Coil3 ImageLoader singleton
     setSingletonImageLoaderFactory { context ->
         createImageLoader(context)
     }
@@ -27,7 +35,6 @@ fun App() {
     val themePreferences = remember { SharedModule.getThemePreferences() }
     val systemDarkTheme = isSystemInDarkTheme()
     
-    // Observe dark mode preference changes
     val darkModePreference by themePreferences.darkModeFlow.collectAsState()
     val isDarkTheme = darkModePreference ?: systemDarkTheme
     
@@ -39,15 +46,12 @@ fun App() {
             val authRepository = remember { SharedModule.authRepository }
             val authState by authRepository.authState.collectAsState()
             
-            // Determine initial screen based on auth state
-            // HomeScreen now includes bottom navigation
             val initialScreen = when (authState) {
                 AuthState.Authenticated -> HomeScreen()
                 else -> LoginScreen()
             }
             
             Navigator(initialScreen) { navigator ->
-                // No transition animation for cleaner bottom navigation UX
                 navigator.lastItem.Content()
             }
         }

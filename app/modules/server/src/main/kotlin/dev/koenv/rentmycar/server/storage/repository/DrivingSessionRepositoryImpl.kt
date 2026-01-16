@@ -10,6 +10,19 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
+/**
+ * Repository implementation for DrivingSession entity operations.
+ * 
+ * Uses Exposed ORM with DrivingSessionsTable for database access.
+ * All database operations are executed asynchronously via dbQuery.
+ * 
+ * Provides:
+ * - Standard CRUD operations
+ * - Queries by reservation ID to retrieve all sessions for a reservation
+ * 
+ * Driving sessions record telemetry data (distance, harsh events) for
+ * calculating driving behavior points awarded to renters.
+ */
 class DrivingSessionRepositoryImpl {
 
     suspend fun findAll(): List<DrivingSession> = dbQuery {

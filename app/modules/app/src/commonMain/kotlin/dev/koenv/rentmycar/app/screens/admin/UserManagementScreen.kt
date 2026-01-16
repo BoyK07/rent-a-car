@@ -31,9 +31,18 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
- * Admin screen for managing users.
- * Allows viewing, editing, and deleting users.
- * Only accessible to users with ADMIN role.
+ * User management screen for admin operations.
+ * 
+ * Features:
+ * - View all users with role, email, and name
+ * - Edit user details (name, email, role) via modal dialog
+ * - Delete users with confirmation dialog
+ * - Role assignment (MEMBER, DRIVER, ADMIN)
+ * - Search and filter capabilities (future enhancement)
+ * - Loading and error states
+ * - Refresh capability
+ * - Prevents self-deletion
+ * - Only accessible to ADMIN role
  */
 class UserManagementScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)

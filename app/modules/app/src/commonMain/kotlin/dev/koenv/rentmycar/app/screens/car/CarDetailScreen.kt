@@ -32,9 +32,17 @@ import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
 /**
- * Car detail screen displaying detailed information about a specific car.
- * Automatically marks the car as "viewed" in local storage.
- * Shows edit and delete actions for car owners (DRIVER/ADMIN roles).
+ * Car detail screen showing comprehensive information about a specific vehicle.
+ * 
+ * Features:
+ * - Car specifications (brand, model, category, fuel type, location)
+ * - Pricing information (hourly rate, TCO, maintenance costs)
+ * - Photo gallery with image loading
+ * - Availability status
+ * - Edit and delete actions (owner/admin only)
+ * - Delete confirmation dialog
+ * - Book now button for available cars
+ * - Automatic car view tracking
  */
 data class CarDetailScreen(
     val carId: Uuid
@@ -57,26 +65,22 @@ data class CarDetailScreen(
             val user = currentUser ?: return@remember false
             val carData = car ?: return@remember false
             val role = user.role.name
-            // Admin can edit any car, Driver can edit their own cars
             role == "ADMIN" || (role == "DRIVER" && carData.ownerId == user.id)
         }
 
         val scope = rememberCoroutineScope()
 
-        // Fetch car details on screen load
         LaunchedEffect(carId) {
             scope.launch {
                 carsRepository.getCar(carId).onSuccess { carDto ->
                     car = carDto
                     isLoading = false
 
-                    // Fetch car photos
                     isLoadingPhotos = true
                     SharedModule.carPhotoApi.getCarPhotosByCarId(carId).onSuccess { photos ->
                         carPhotos = photos
                         isLoadingPhotos = false
                     }.onFailure {
-                        // Photos are optional, just mark as finished loading
                         isLoadingPhotos = false
                     }
                 }.onFailure { error ->
@@ -86,7 +90,6 @@ data class CarDetailScreen(
             }
         }
 
-        // Delete confirmation dialog
         if (showDeleteDialog && car != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },

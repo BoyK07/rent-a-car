@@ -1,5 +1,19 @@
 package dev.koenv.rentmycar.server.storage.db.tables
 
+/**
+ * Exposed table definition for reservations.
+ * 
+ * Columns:
+ * - id: UUID primary key (auto-generated)
+ * - carId: Foreign key to cars table
+ * - renterId: Foreign key to users table
+ * - startTime: Reservation start (datetime)
+ * - endTime: Reservation end (datetime)
+ * - status: Reservation status enum (PENDING, CONFIRMED, ACTIVE, COMPLETED, CANCELLED)
+ * - priceTotal: Total price calculated server-side (decimal 10,2)
+ * - pointsAwarded: Driving behavior points earned (default: 0)
+ */
+
 import dev.koenv.rentmycar.shared.domain.enums.ReservationStatus
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.datetime
