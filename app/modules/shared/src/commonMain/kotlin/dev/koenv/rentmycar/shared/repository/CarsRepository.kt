@@ -53,6 +53,7 @@ class CarsRepository(
         // Return database flow that updates in real-time
         return carDao.getActiveCarsFlow()
     }
+
     
     /**
      * Fetches cars with offline-first strategy.
