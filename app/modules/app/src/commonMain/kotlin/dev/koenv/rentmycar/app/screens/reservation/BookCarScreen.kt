@@ -628,7 +628,7 @@ private fun AvailabilitySchedule(
                             .toLocalDateTime(TimeZone.UTC)
                         val isPast = slotEnd <= now
                         val isAvailable = availabilityWindows.any { window ->
-                            window.startTime <= slotStart && window.endTime >= slotEnd
+                            window.startTime < slotEnd && window.endTime > slotStart
                         }
                         val color = when {
                             isPast -> AppTheme.colors.disabled

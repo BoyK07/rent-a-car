@@ -21,12 +21,12 @@ class CarAvailabilityApi(
     private val httpClient: HttpClient
 ) {
     /**
-     * Get all car availability records with optional filter by car.
+     * Get availability windows for a specific car.
      */
-    suspend fun getCarAvailability(carId: Uuid? = null): Result<List<CarAvailabilityDto>> {
+    suspend fun getCarAvailability(carId: Uuid): Result<List<CarAvailabilityDto>> {
         return try {
-            val response = httpClient.get(ApiV1.CarAvailability(
-                carId = carId?.toString()
+            val response = httpClient.get(ApiV1.Cars.Id.Availability(
+                parent = ApiV1.Cars.Id(id = carId.toString())
             ))
             val apiResponse = response.body<ApiResponse<List<CarAvailabilityDto>>>()
             if (apiResponse.success && apiResponse.data != null) {
@@ -40,11 +40,18 @@ class CarAvailabilityApi(
     }
     
     /**
-     * Get a single car availability record by ID.
+     * Get a single availability window by ID for a specific car.
      */
-    suspend fun getCarAvailabilityById(id: Uuid): Result<CarAvailabilityDto> {
+    suspend fun getCarAvailabilityById(carId: Uuid, availabilityId: Uuid): Result<CarAvailabilityDto> {
         return try {
-            val response = httpClient.get(ApiV1.CarAvailability.Id(id = id.toString()))
+            val response = httpClient.get(
+                ApiV1.Cars.Id.Availability.AvailabilityId(
+                    parent = ApiV1.Cars.Id.Availability(
+                        parent = ApiV1.Cars.Id(id = carId.toString())
+                    ),
+                    availabilityId = availabilityId.toString()
+                )
+            )
             val apiResponse = response.body<ApiResponse<CarAvailabilityDto>>()
             if (apiResponse.success && apiResponse.data != null) {
                 Result.success(apiResponse.data)
@@ -79,11 +86,15 @@ class CarAvailabilityApi(
     }
     
     /**
-     * Create a new car availability record.
+     * Create a new availability window for a car.
      */
-    suspend fun createCarAvailability(request: CreateCarAvailabilityRequestDto): Result<CarAvailabilityDto> {
+    suspend fun createCarAvailability(carId: Uuid, request: CreateCarAvailabilityRequestDto): Result<CarAvailabilityDto> {
         return try {
-            val response = httpClient.post(ApiV1.CarAvailability()) {
+            val response = httpClient.post(
+                ApiV1.Cars.Id.Availability(
+                    parent = ApiV1.Cars.Id(id = carId.toString())
+                )
+            ) {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -99,11 +110,22 @@ class CarAvailabilityApi(
     }
     
     /**
-     * Update a car availability record.
+     * Update an availability window for a car.
      */
-    suspend fun updateCarAvailability(id: Uuid, request: UpdateCarAvailabilityRequestDto): Result<CarAvailabilityDto> {
+    suspend fun updateCarAvailability(
+        carId: Uuid,
+        availabilityId: Uuid,
+        request: UpdateCarAvailabilityRequestDto
+    ): Result<CarAvailabilityDto> {
         return try {
-            val response = httpClient.put(ApiV1.CarAvailability.Id(id = id.toString())) {
+            val response = httpClient.put(
+                ApiV1.Cars.Id.Availability.AvailabilityId(
+                    parent = ApiV1.Cars.Id.Availability(
+                        parent = ApiV1.Cars.Id(id = carId.toString())
+                    ),
+                    availabilityId = availabilityId.toString()
+                )
+            ) {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -119,11 +141,22 @@ class CarAvailabilityApi(
     }
     
     /**
-     * Partially update a car availability record.
+     * Partially update an availability window for a car.
      */
-    suspend fun patchCarAvailability(id: Uuid, request: PatchCarAvailabilityRequestDto): Result<CarAvailabilityDto> {
+    suspend fun patchCarAvailability(
+        carId: Uuid,
+        availabilityId: Uuid,
+        request: PatchCarAvailabilityRequestDto
+    ): Result<CarAvailabilityDto> {
         return try {
-            val response = httpClient.patch(ApiV1.CarAvailability.Id(id = id.toString())) {
+            val response = httpClient.patch(
+                ApiV1.Cars.Id.Availability.AvailabilityId(
+                    parent = ApiV1.Cars.Id.Availability(
+                        parent = ApiV1.Cars.Id(id = carId.toString())
+                    ),
+                    availabilityId = availabilityId.toString()
+                )
+            ) {
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -139,15 +172,22 @@ class CarAvailabilityApi(
     }
     
     /**
-     * Delete a car availability record.
+     * Delete an availability window for a car.
      */
-    suspend fun deleteCarAvailability(id: Uuid): Result<Unit> {
+    suspend fun deleteCarAvailability(carId: Uuid, availabilityId: Uuid): Result<Unit> {
         return try {
-            val response = httpClient.delete(ApiV1.CarAvailability.Id(id = id.toString()))
-            val apiResponse = response.body<ApiResponse<Unit>>()
-            if (apiResponse.success) {
+            val response = httpClient.delete(
+                ApiV1.Cars.Id.Availability.AvailabilityId(
+                    parent = ApiV1.Cars.Id.Availability(
+                        parent = ApiV1.Cars.Id(id = carId.toString())
+                    ),
+                    availabilityId = availabilityId.toString()
+                )
+            )
+            if (response.status.value in 200..299) {
                 Result.success(Unit)
             } else {
+                val apiResponse = response.body<ApiResponse<Any?>>()
                 Result.failure(Exception(apiResponse.message ?: "Failed to delete car availability"))
             }
         } catch (e: Exception) {

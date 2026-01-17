@@ -35,7 +35,8 @@ class CarsApi(
         brand: String? = null,
         category: String? = null,
         fuelType: String? = null,
-        isActive: Boolean? = null
+        isActive: Boolean? = null,
+        ownerId: String? = null
     ): Result<Any> {
         return try {
             val response = httpClient.get(ApiV1.Cars(
@@ -49,7 +50,8 @@ class CarsApi(
                 brand = brand,
                 category = category,
                 fuelType = fuelType,
-                isActive = isActive
+                isActive = isActive,
+                ownerId = ownerId
             ))
             
             // Determine response type based on parameters
@@ -160,10 +162,10 @@ class CarsApi(
     suspend fun deleteCar(id: Uuid): Result<Unit> {
         return try {
             val response = httpClient.delete(ApiV1.Cars.Id(id = id.toString()))
-            val apiResponse = response.body<ApiResponse<Unit>>()
-            if (apiResponse.success) {
+            if (response.status.value in 200..299) {
                 Result.success(Unit)
             } else {
+                val apiResponse = response.body<ApiResponse<Any?>>()
                 Result.failure(Exception(apiResponse.message ?: "Failed to delete car"))
             }
         } catch (e: Exception) {

@@ -119,6 +119,19 @@ class CarsRepository(
             }
         }
     }
+
+    /**
+     * Fetch cars owned by a specific user.
+     * Always fetches from API to avoid mixing with cached lists.
+     */
+    suspend fun getCarsByOwner(ownerId: Uuid): Result<List<CarDto>> {
+        return carsApi.getCars(ownerId = ownerId.toString()).map { response ->
+            when (response) {
+                is List<*> -> response.filterIsInstance<CarDto>()
+                else -> emptyList()
+            }
+        }
+    }
     
     /**
      * Background sync from API to database.

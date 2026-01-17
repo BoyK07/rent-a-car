@@ -22,6 +22,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
 import dev.koenv.rentmycar.app.screens.auth.LoginScreen
+import dev.koenv.rentmycar.app.screens.car.MyCarsScreen
 import dev.koenv.rentmycar.app.screens.home.HomeScreen
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
@@ -318,6 +319,27 @@ private fun ProfileContent(
                     style = AppTheme.typography.bodySmall,
                     color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
                 )
+            }
+        }
+
+        if (user.role.name == "ADMIN" || user.role.name == "DRIVER") {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "My Cars",
+                        style = AppTheme.typography.titleLarge
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Manage and edit your own car listings",
+                        style = AppTheme.typography.bodySmall,
+                        color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(onClick = { navigator.push(MyCarsScreen()) }) {
+                        Text("View My Cars")
+                    }
+                }
             }
         }
         
