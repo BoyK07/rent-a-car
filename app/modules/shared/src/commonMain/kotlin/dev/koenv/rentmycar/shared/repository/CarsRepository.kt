@@ -53,6 +53,7 @@ class CarsRepository(
         // Return database flow that updates in real-time
         return carDao.getActiveCarsFlow()
     }
+
     
     /**
      * Fetches cars with offline-first strategy.
@@ -115,6 +116,19 @@ class CarsRepository(
             val cachedCars = carDao.getAllCars()
             if (cachedCars.isNotEmpty()) {
                 return Result.success(cachedCars)
+            }
+        }
+    }
+
+    /**
+     * Fetch cars owned by a specific user.
+     * Always fetches from API to avoid mixing with cached lists.
+     */
+    suspend fun getCarsByOwner(ownerId: Uuid): Result<List<CarDto>> {
+        return carsApi.getCars(ownerId = ownerId.toString()).map { response ->
+            when (response) {
+                is List<*> -> response.filterIsInstance<CarDto>()
+                else -> emptyList()
             }
         }
     }

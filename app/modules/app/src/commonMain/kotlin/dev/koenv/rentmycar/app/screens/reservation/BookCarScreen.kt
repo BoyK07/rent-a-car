@@ -3,6 +3,9 @@ package dev.koenv.rentmycar.app.screens.reservation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -10,6 +13,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -28,6 +34,7 @@ import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.app.util.formatDateTime
 import dev.koenv.rentmycar.shared.SharedModule
+import dev.koenv.rentmycar.shared.dto.car.CarAvailabilityDto
 import dev.koenv.rentmycar.shared.dto.car.CarDto
 import dev.koenv.rentmycar.shared.dto.reservation.CreateReservationRequestDto
 import dev.koenv.rentmycar.shared.dto.reservation.ReservationQuoteRequestDto
@@ -58,6 +65,7 @@ data class BookCarScreen(
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
         val reservationRepository = remember { SharedModule.reservationRepository }
+        val availabilityApi = remember { SharedModule.carAvailabilityApi }
         
         var car by remember { mutableStateOf<CarDto?>(null) }
         var quote by remember { mutableStateOf<ReservationQuoteResponseDto?>(null) }
@@ -65,6 +73,9 @@ data class BookCarScreen(
         var isLoadingQuote by remember { mutableStateOf(false) }
         var isCreatingReservation by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        var availabilityWindows by remember { mutableStateOf<List<CarAvailabilityDto>>(emptyList()) }
+        var isLoadingAvailability by remember { mutableStateOf(false) }
+        var availabilityError by remember { mutableStateOf<String?>(null) }
         
         val now = Clock.System.now()
         val nextHour = now.plus(1, DateTimeUnit.HOUR, TimeZone.UTC)
@@ -72,6 +83,15 @@ data class BookCarScreen(
             LocalDateTime(it.year, it.monthNumber, it.dayOfMonth, it.hour, 0, 0, 0)
         }
         val defaultEnd = defaultStart.toInstant(TimeZone.UTC).plus(2, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC)
+        val scheduleWindowStart = LocalDateTime(
+            defaultStart.year,
+            defaultStart.monthNumber,
+            defaultStart.dayOfMonth,
+            0,
+            0,
+            0,
+            0
+        )
         
         var startDateTime by remember { mutableStateOf(defaultStart) }
         var endDateTime by remember { mutableStateOf(defaultEnd) }
@@ -100,6 +120,21 @@ data class BookCarScreen(
                 }.onFailure { error ->
                     errorMessage = error.message ?: "Failed to load car details"
                     isLoadingCar = false
+                }
+            }
+        }
+
+        LaunchedEffect(carId) {
+            scope.launch {
+                isLoadingAvailability = true
+                availabilityError = null
+                availabilityApi.getCarAvailability(carId).onSuccess { windows ->
+                    availabilityWindows = windows
+                    isLoadingAvailability = false
+                }.onFailure { error ->
+                    availabilityError = error.message ?: "Failed to load availability"
+                    availabilityWindows = emptyList()
+                    isLoadingAvailability = false
                 }
             }
         }
@@ -222,6 +257,55 @@ data class BookCarScreen(
                                         style = AppTheme.typography.titleLarge,
                                         color = AppTheme.colors.primary
                                     )
+                                }
+                            }
+
+                            // Availability schedule
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Availability (next 14 days)",
+                                        style = AppTheme.typography.titleLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    AvailabilityLegend()
+
+                                    when {
+                                        isLoadingAvailability -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator()
+                                            }
+                                        }
+                                        availabilityError != null -> {
+                                            Text(
+                                                text = availabilityError ?: "",
+                                                color = AppTheme.colors.error,
+                                                style = AppTheme.typography.bodySmall
+                                            )
+                                        }
+                                        availabilityWindows.isEmpty() -> {
+                                            Text(
+                                                text = "No availability windows have been set for this car yet.",
+                                                color = AppTheme.colors.onSurface.copy(alpha = 0.6f),
+                                                style = AppTheme.typography.bodySmall
+                                            )
+                                        }
+                                        else -> {
+                                            AvailabilitySchedule(
+                                                availabilityWindows = availabilityWindows,
+                                                windowStart = scheduleWindowStart,
+                                                days = 14,
+                                                slotHours = 2,
+                                                now = now.toLocalDateTime(TimeZone.UTC)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                             
@@ -455,4 +539,133 @@ data class BookCarScreen(
             }
         }
     }
+}
+
+@Composable
+private fun AvailabilityLegend() {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        AvailabilityLegendItem(label = "Available", color = AppTheme.colors.success)
+        AvailabilityLegendItem(label = "Unavailable", color = AppTheme.colors.surfaceVariant)
+        AvailabilityLegendItem(label = "Past", color = AppTheme.colors.disabled)
+    }
+}
+
+@Composable
+private fun AvailabilityLegendItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(color = color, shape = RoundedCornerShape(3.dp))
+                .border(1.dp, AppTheme.colors.outline, shape = RoundedCornerShape(3.dp))
+        )
+        Text(text = label, style = AppTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun AvailabilitySchedule(
+    availabilityWindows: List<CarAvailabilityDto>,
+    windowStart: LocalDateTime,
+    days: Int,
+    slotHours: Int,
+    now: LocalDateTime
+) {
+    val slots = remember(slotHours) { (0 until 24 step slotHours).toList() }
+    val dayStarts = remember(windowStart, days) {
+        (0 until days).map { dayOffset ->
+            windowStart.toInstant(TimeZone.UTC)
+                .plus(dayOffset, DateTimeUnit.DAY, TimeZone.UTC)
+                .toLocalDateTime(TimeZone.UTC)
+        }
+    }
+    val scrollState = rememberScrollState()
+    val labelWidth = 84.dp
+    val slotWidth = 34.dp
+    val slotHeight = 18.dp
+    val slotShape = RoundedCornerShape(4.dp)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Day",
+            style = AppTheme.typography.bodySmall,
+            modifier = Modifier.width(labelWidth)
+        )
+        Row(modifier = Modifier.horizontalScroll(scrollState)) {
+            slots.forEach { hour ->
+                Text(
+                    text = formatHourLabel(hour),
+                    style = AppTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(slotWidth)
+                )
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(6.dp))
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        dayStarts.forEach { dayStart ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatDayLabel(dayStart),
+                    style = AppTheme.typography.bodySmall,
+                    modifier = Modifier.width(labelWidth)
+                )
+                Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                    slots.forEach { hour ->
+                        val slotStart = dayStart.toInstant(TimeZone.UTC)
+                            .plus(hour, DateTimeUnit.HOUR, TimeZone.UTC)
+                            .toLocalDateTime(TimeZone.UTC)
+                        val slotEnd = slotStart.toInstant(TimeZone.UTC)
+                            .plus(slotHours, DateTimeUnit.HOUR, TimeZone.UTC)
+                            .toLocalDateTime(TimeZone.UTC)
+                        val isPast = slotEnd <= now
+                        val isAvailable = availabilityWindows.any { window ->
+                            window.startTime < slotEnd && window.endTime > slotStart
+                        }
+                        val color = when {
+                            isPast -> AppTheme.colors.disabled
+                            isAvailable -> AppTheme.colors.success
+                            else -> AppTheme.colors.surfaceVariant
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(slotWidth, slotHeight)
+                                .background(color, slotShape)
+                                .border(1.dp, AppTheme.colors.outline, slotShape)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatDayLabel(dateTime: LocalDateTime): String {
+    val date = LocalDate(dateTime.year, dateTime.monthNumber, dateTime.dayOfMonth)
+    val dayName = when (date.dayOfWeek) {
+        DayOfWeek.MONDAY -> "Mon"
+        DayOfWeek.TUESDAY -> "Tue"
+        DayOfWeek.WEDNESDAY -> "Wed"
+        DayOfWeek.THURSDAY -> "Thu"
+        DayOfWeek.FRIDAY -> "Fri"
+        DayOfWeek.SATURDAY -> "Sat"
+        DayOfWeek.SUNDAY -> "Sun"
+        else -> "Day"
+    }
+    val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    val month = months[date.monthNumber - 1]
+    return "$dayName ${date.dayOfMonth} $month"
+}
+
+private fun formatHourLabel(hour: Int): String {
+    return hour.toString().padStart(2, '0')
 }

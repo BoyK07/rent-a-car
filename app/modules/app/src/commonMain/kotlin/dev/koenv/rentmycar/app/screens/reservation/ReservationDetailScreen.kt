@@ -23,6 +23,7 @@ import dev.koenv.rentmycar.app.ui.components.*
 import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
 import dev.koenv.rentmycar.app.util.formatDateTime
+import dev.koenv.rentmycar.app.util.rememberMapsNavigator
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.domain.enums.ReservationStatus
 import dev.koenv.rentmycar.shared.domain.enums.Role
@@ -54,6 +55,7 @@ data class ReservationDetailScreen(
         val reservationRepository = remember { SharedModule.reservationRepository }
         val carsRepository = remember { SharedModule.carsRepository }
         val authRepository = remember { SharedModule.authRepository }
+        val mapsNavigator = rememberMapsNavigator()
 
         var reservation by remember { mutableStateOf<ReservationDto?>(null) }
         var car by remember { mutableStateOf<CarDto?>(null) }
@@ -406,6 +408,25 @@ data class ReservationDetailScreen(
                                     loading = isConfirming
                                 ) {
                                     Text(if (isConfirming) "Confirming..." else "Confirm Reservation")
+                                }
+                            }
+
+                            // Route button (only when confirmed)
+                            if (reservation!!.status == ReservationStatus.CONFIRMED && car != null) {
+                                val label = car!!.formattedAddress?.takeIf { it.isNotBlank() }
+                                    ?: "${car!!.brand} ${car!!.model}"
+                                Button(
+                                    onClick = {
+                                        mapsNavigator.open(
+                                            lat = car!!.locationLat,
+                                            lng = car!!.locationLng,
+                                            label = label
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    variant = ButtonVariant.Primary
+                                ) {
+                                    Text("Start Route in Maps")
                                 }
                             }
 

@@ -4,6 +4,8 @@ import dev.koenv.rentmycar.server.routes.registerAllRoutes
 import io.ktor.server.application.*
 import io.ktor.server.resources.*
 import io.ktor.server.routing.*
+import io.ktor.server.http.content.*
+import java.io.File
 
 /**
  * Configures application routing.
@@ -20,6 +22,7 @@ fun Application.configureRouting() {
     install(Resources)
     
     routing {
+        staticFiles("/uploads", File("uploads"))
         registerAllRoutes(this)
     }
 }
