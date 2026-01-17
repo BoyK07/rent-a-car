@@ -38,6 +38,7 @@ import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
 import dev.koenv.rentmycar.shared.dto.car.CreateCarAvailabilityRequestDto
 import dev.koenv.rentmycar.shared.dto.car.CreateCarRequestDto
+import dev.koenv.rentmycar.app.util.rememberImagePicker
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 import kotlin.time.Clock
@@ -66,10 +67,13 @@ class AddCarScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
         val availabilityApi = remember { SharedModule.carAvailabilityApi }
+        val carPhotoApi = remember { SharedModule.carPhotoApi }
         
         var isSaving by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var createdCarId by remember { mutableStateOf<Uuid?>(null) }
+        var selectedPhotoName by remember { mutableStateOf<String?>(null) }
+        var selectedPhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
         
         // Form fields
         var brand by remember { mutableStateOf("") }
@@ -86,6 +90,11 @@ class AddCarScreen : Screen {
         
         var showCategoryMenu by remember { mutableStateOf(false) }
         var showFuelTypeMenu by remember { mutableStateOf(false) }
+
+        val pickImage = rememberImagePicker { fileName, fileBytes ->
+            selectedPhotoName = fileName
+            selectedPhotoBytes = fileBytes
+        }
 
         val now = Clock.System.now()
         val nextHour = now.plus(1, DateTimeUnit.HOUR, TimeZone.UTC)
@@ -393,6 +402,27 @@ class AddCarScreen : Screen {
                 ) {
                     Text("Add availability window")
                 }
+
+                // Optional photo upload
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Photo (optional)",
+                            style = AppTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = selectedPhotoName ?: "No photo selected",
+                            style = AppTheme.typography.bodySmall,
+                            color = AppTheme.colors.onSurface.copy(alpha = 0.6f)
+                        )
+                        Button(
+                            onClick = { pickImage() },
+                            variant = ButtonVariant.Secondary
+                        ) {
+                            Text("Select Photo")
+                        }
+                    }
+                }
                 
                 if (errorMessage != null) {
                     Text(
@@ -467,6 +497,20 @@ class AddCarScreen : Screen {
                                 errorMessage = "Car created, but availability could not be saved."
                                 isSaving = false
                                 return@launch
+                            }
+
+                            val photoBytes = selectedPhotoBytes
+                            val photoName = selectedPhotoName
+                            if (photoBytes != null && photoName != null) {
+                                carPhotoApi.uploadCarPhoto(
+                                    carId = carId,
+                                    fileName = photoName,
+                                    fileBytes = photoBytes
+                                ).onFailure {
+                                    errorMessage = "Car created, but photo upload failed."
+                                    isSaving = false
+                                    return@launch
+                                }
                             }
 
                             navigator.pop()

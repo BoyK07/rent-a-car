@@ -22,9 +22,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import coil3.compose.SubcomposeAsyncImage
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import dev.koenv.rentmycar.app.screens.car.AddCarScreen
 import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
@@ -570,6 +572,15 @@ private fun CarListItem(
     val distance = if (showDistance) {
         calculateDistance(userLat, userLng, car.locationLat, car.locationLng)
     } else null
+    val carPhotoApi = remember { SharedModule.carPhotoApi }
+    var photoUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(car.id) {
+        carPhotoApi.getCarPhotosByCarId(car.id).onSuccess { photos ->
+            val primary = photos.firstOrNull { it.isPrimary } ?: photos.firstOrNull()
+            photoUrl = primary?.url
+        }
+    }
     
     Card(
         modifier = Modifier
@@ -579,6 +590,27 @@ private fun CarListItem(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            if (photoUrl != null) {
+                SubcomposeAsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Car photo",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

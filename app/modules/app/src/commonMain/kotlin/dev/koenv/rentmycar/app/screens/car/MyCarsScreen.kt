@@ -29,9 +29,12 @@ import dev.koenv.rentmycar.app.ui.components.Scaffold
 import dev.koenv.rentmycar.app.ui.components.Text
 import dev.koenv.rentmycar.app.ui.components.card.Card
 import dev.koenv.rentmycar.app.ui.components.topbar.TopBar
+import dev.koenv.rentmycar.app.util.rememberImagePicker
 import dev.koenv.rentmycar.shared.SharedModule
 import dev.koenv.rentmycar.shared.dto.car.CarDto
+import dev.koenv.rentmycar.shared.dto.car.CarPhotoDto
 import kotlinx.coroutines.launch
+import kotlin.uuid.Uuid
 
 /**
  * Shows cars owned by the current user with quick access to edit.
@@ -42,16 +45,34 @@ class MyCarsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val carsRepository = remember { SharedModule.carsRepository }
         val authRepository = remember { SharedModule.authRepository }
+        val carPhotoApi = remember { SharedModule.carPhotoApi }
 
         var cars by remember { mutableStateOf<List<CarDto>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var isRefreshing by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var carToDelete by remember { mutableStateOf<CarDto?>(null) }
+        val photosByCar = remember { mutableStateMapOf<Uuid, List<CarPhotoDto>>() }
+        var uploadTargetId by remember { mutableStateOf<Uuid?>(null) }
 
-        val currentUser by authRepository.currentUser.collectAsState()
         val scope = rememberCoroutineScope()
 
+        val pickImage = rememberImagePicker { fileName, fileBytes ->
+            val carId = uploadTargetId
+            uploadTargetId = null
+            if (carId == null) return@rememberImagePicker
+            scope.launch {
+                carPhotoApi.uploadCarPhoto(carId, fileName, fileBytes).onSuccess {
+                    carPhotoApi.getCarPhotosByCarId(carId).onSuccess { photos ->
+                        photosByCar[carId] = photos
+                    }
+                }.onFailure { error ->
+                    errorMessage = error.message ?: "Failed to upload photo"
+                }
+            }
+        }
+
+        val currentUser by authRepository.currentUser.collectAsState()
         val loadCars: (Boolean) -> Unit = { force ->
             scope.launch {
                 if (force) {
@@ -71,6 +92,13 @@ class MyCarsScreen : Screen {
 
                 carsRepository.getCarsByOwner(userId).onSuccess { list ->
                     cars = list
+                    list.forEach { car ->
+                        if (!photosByCar.containsKey(car.id)) {
+                            carPhotoApi.getCarPhotosByCarId(car.id).onSuccess { photos ->
+                                photosByCar[car.id] = photos
+                            }
+                        }
+                    }
                 }.onFailure { error ->
                     errorMessage = error.message ?: "Failed to load cars"
                 }
@@ -209,7 +237,12 @@ class MyCarsScreen : Screen {
                                 MyCarListItem(
                                     car = car,
                                     onEdit = { navigator.push(EditCarScreen(car.id)) },
-                                    onDelete = { carToDelete = car }
+                                    onDelete = { carToDelete = car },
+                                    photoCount = photosByCar[car.id]?.size ?: 0,
+                                    onAddPhoto = {
+                                        uploadTargetId = car.id
+                                        pickImage()
+                                    }
                                 )
                             }
                         }
@@ -224,7 +257,9 @@ class MyCarsScreen : Screen {
 private fun MyCarListItem(
     car: CarDto,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    photoCount: Int,
+    onAddPhoto: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -284,6 +319,12 @@ private fun MyCarListItem(
                 style = AppTheme.typography.bodySmall,
                 color = if (car.isActive) AppTheme.colors.success else AppTheme.colors.onSurface.copy(alpha = 0.6f)
             )
+            if (photoCount == 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onAddPhoto, variant = ButtonVariant.Secondary) {
+                    Text("Add Photo")
+                }
+            }
         }
     }
 }
