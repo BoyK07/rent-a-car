@@ -22,3 +22,7 @@ db:
   password: "$DB_PASSWORD:password"
   path: "$DB_PATH:build/h2db/rentmycar"  # Used only for h2-file provider
   seed: "$DB_SEED:false"                 # Seed test data on startup (development only)
+
+geocoding:
+  google:
+    apiKey: "$GOOGLE_GEOCODING_API_KEY:AIzaSyCd85a_oJlVExvA27kO8pHKZK7nhCusDr4"

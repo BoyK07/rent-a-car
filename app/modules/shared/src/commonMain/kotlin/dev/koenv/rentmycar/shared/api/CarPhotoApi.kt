@@ -9,7 +9,9 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.resources.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import kotlin.uuid.Uuid
 
 /**
@@ -124,6 +126,56 @@ class CarPhotoApi(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Upload a photo file for a specific car.
+     */
+    suspend fun uploadCarPhoto(
+        carId: Uuid,
+        fileName: String,
+        fileBytes: ByteArray
+    ): Result<CarPhotoDto> {
+        return try {
+            val response = httpClient.post(
+                ApiV1.Cars.Id.Photos.Upload(
+                    parent = ApiV1.Cars.Id.Photos(parent = ApiV1.Cars.Id(id = carId.toString()))
+                )
+            ) {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                fileBytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, guessContentType(fileName).toString())
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+            val apiResponse = response.body<ApiResponse<CarPhotoDto>>()
+            if (apiResponse.success && apiResponse.data != null) {
+                Result.success(apiResponse.data)
+            } else {
+                Result.failure(Exception(apiResponse.message ?: "Failed to upload car photo"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun guessContentType(fileName: String): ContentType {
+        return when (fileName.substringAfterLast('.', "").lowercase()) {
+            "jpg", "jpeg" -> ContentType.Image.JPEG
+            "png" -> ContentType.Image.PNG
+            "webp" -> ContentType("image", "webp")
+            "heic" -> ContentType("image", "heic")
+            else -> ContentType.Application.OctetStream
         }
     }
 }

@@ -22,14 +22,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import coil3.compose.SubcomposeAsyncImage
 import com.ionspin.kotlin.bignum.decimal.DecimalMode
 import dev.koenv.rentmycar.app.screens.car.AddCarScreen
 import dev.koenv.rentmycar.app.screens.car.CarDetailScreen
+import dev.koenv.rentmycar.app.screens.map.MapScreen
 import dev.koenv.rentmycar.app.screens.profile.ProfileScreen
 import dev.koenv.rentmycar.app.screens.admin.AdminScreen
+import dev.koenv.rentmycar.app.location.rememberUserLocation
 import dev.koenv.rentmycar.app.ui.AppTheme
 import dev.koenv.rentmycar.app.ui.components.Button
 import dev.koenv.rentmycar.app.ui.components.Icon
@@ -75,19 +79,26 @@ class HomeScreen : Screen {
         var filtersExpanded by remember { mutableStateOf(filterState.filtersExpanded) }
         var showAvailableOnly by remember { mutableStateOf(filterState.showAvailableOnly) }
         var searchNearby by remember { mutableStateOf(filterState.searchNearby) }
-        var userLat by remember { mutableStateOf(52.3676) }
-        var userLng by remember { mutableStateOf(4.9041) }
+        var userLat by remember { mutableStateOf(filterState.userLat) }
+        var userLng by remember { mutableStateOf(filterState.userLng) }
         var maxDistance by remember { mutableStateOf(filterState.maxDistance) }
         var brandFilter by remember { mutableStateOf(filterState.brandFilter) }
         var selectedCategories by remember { mutableStateOf(filterState.selectedCategories) }
         var minRate by remember { mutableStateOf(filterState.minRate) }
         var maxRate by remember { mutableStateOf(filterState.maxRate) }
         var sortBy by remember { mutableStateOf(filterState.sortBy) }
-        
-        LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
+
+        rememberUserLocation { lat, lng ->
+            userLat = lat
+            userLng = lng
+        }
+
+        LaunchedEffect(filtersExpanded, showAvailableOnly, searchNearby, userLat, userLng, maxDistance, brandFilter, selectedCategories, minRate, maxRate, sortBy) {
             filterState.filtersExpanded = filtersExpanded
             filterState.showAvailableOnly = showAvailableOnly
             filterState.searchNearby = searchNearby
+            filterState.userLat = userLat
+            filterState.userLng = userLng
             filterState.maxDistance = maxDistance
             filterState.brandFilter = brandFilter
             filterState.selectedCategories = selectedCategories
@@ -192,15 +203,36 @@ class HomeScreen : Screen {
                                 style = AppTheme.typography.titleLarge,
                                 modifier = Modifier.weight(1f).padding(start = 8.dp)
                             )
-                            IconButton(
-                                onClick = { refreshCars() },
-                                enabled = !isRefreshing,
-                                variant = IconButtonVariant.Ghost
-                            ) {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = "Refresh cars"
-                                )
+                            Row {
+                                IconButton(
+                                    onClick = {
+                                        navigator.push(
+                                            MapScreen(
+                                                cars = filteredCars,
+                                                userLat = userLat,
+                                                userLng = userLng,
+                                                showNearby = searchNearby,
+                                                maxDistanceKm = maxDistance
+                                            )
+                                        )
+                                    },
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(
+                                        Icons.Default.Map,
+                                        contentDescription = "View map"
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { refreshCars() },
+                                    enabled = !isRefreshing,
+                                    variant = IconButtonVariant.Ghost
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Refresh cars"
+                                    )
+                                }
                             }
                         }
                     }
@@ -540,6 +572,15 @@ private fun CarListItem(
     val distance = if (showDistance) {
         calculateDistance(userLat, userLng, car.locationLat, car.locationLng)
     } else null
+    val carPhotoApi = remember { SharedModule.carPhotoApi }
+    var photoUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(car.id) {
+        carPhotoApi.getCarPhotosByCarId(car.id).onSuccess { photos ->
+            val primary = photos.firstOrNull { it.isPrimary } ?: photos.firstOrNull()
+            photoUrl = primary?.url
+        }
+    }
     
     Card(
         modifier = Modifier
@@ -549,6 +590,27 @@ private fun CarListItem(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            if (photoUrl != null) {
+                SubcomposeAsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Car photo",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

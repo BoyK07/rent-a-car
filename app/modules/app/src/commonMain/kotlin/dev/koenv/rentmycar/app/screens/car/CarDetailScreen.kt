@@ -367,8 +367,23 @@ private fun CarDetailContent(car: CarDto, carPhotos: List<CarPhotoDto>) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                DetailRow("Latitude", car.locationLat.toString())
-                DetailRow("Longitude", car.locationLng.toString())
+                val address = car.formattedAddress?.takeIf { it.isNotBlank() }
+                    ?: listOfNotNull(
+                        car.addressLine1,
+                        car.addressLine2,
+                        car.postalCode,
+                        car.city,
+                        car.country
+                    ).filter { it.isNotBlank() }
+                        .joinToString(", ")
+                        .takeIf { it.isNotBlank() }
+
+                if (address != null) {
+                    DetailRow("Address", address)
+                } else {
+                    DetailRow("Latitude", car.locationLat.toString())
+                    DetailRow("Longitude", car.locationLng.toString())
+                }
             }
         }
 

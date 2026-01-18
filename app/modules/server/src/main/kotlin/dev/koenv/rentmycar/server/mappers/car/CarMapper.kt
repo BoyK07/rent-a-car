@@ -25,6 +25,12 @@ fun Car.toDto(): CarDto {
         category = category,
         fuelType = fuelType,
         ratePerHour = ratePerHour,
+        addressLine1 = addressLine1,
+        addressLine2 = addressLine2,
+        postalCode = postalCode,
+        city = city,
+        country = country,
+        formattedAddress = formattedAddress,
         locationLat = locationLat,
         locationLng = locationLng,
         isActive = isActive
@@ -45,8 +51,13 @@ fun CreateCarRequestDto.toEntity(ownerId: Uuid): Car = Car(
     category = category,
     fuelType = fuelType,
     ratePerHour = ratePerHour,
-    locationLat = locationLat,
-    locationLng = locationLng,
+    addressLine1 = addressLine1,
+    addressLine2 = addressLine2,
+    postalCode = postalCode,
+    city = city,
+    country = country,
+    locationLat = requireNotNull(locationLat) { "Location latitude is required" },
+    locationLng = requireNotNull(locationLng) { "Location longitude is required" },
     isActive = isActive
 )
 
@@ -68,8 +79,13 @@ fun UpdateCarRequestDto.toEntity(id: Uuid, ownerId: Uuid): Car = Car(
     category = category,
     fuelType = fuelType,
     ratePerHour = ratePerHour,
-    locationLat = locationLat,
-    locationLng = locationLng,
+    addressLine1 = addressLine1,
+    addressLine2 = addressLine2,
+    postalCode = postalCode,
+    city = city,
+    country = country,
+    locationLat = requireNotNull(locationLat) { "Location latitude is required" },
+    locationLng = requireNotNull(locationLng) { "Location longitude is required" },
     isActive = isActive
 )
 
@@ -93,9 +109,13 @@ fun PatchCarRequestDto.applyPatch(existing: Car): Car {
         category = category ?: existing.category,
         fuelType = fuelType ?: existing.fuelType,
         ratePerHour = ratePerHour ?: existing.ratePerHour,
+        addressLine1 = addressLine1 ?: existing.addressLine1,
+        addressLine2 = addressLine2 ?: existing.addressLine2,
+        postalCode = postalCode ?: existing.postalCode,
+        city = city ?: existing.city,
+        country = country ?: existing.country,
         locationLat = locationLat ?: existing.locationLat,
         locationLng = locationLng ?: existing.locationLng,
         isActive = isActive ?: existing.isActive
     )
 }
-

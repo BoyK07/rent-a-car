@@ -79,6 +79,11 @@ suspend fun seedData() {
             it[category] = CarCategory.ICE
             it[fuelType] = FuelType.PETROL
             it[ratePerHour] = BigDecimal("15.50")
+            it[addressLine1] = "Coolsingel 1"
+            it[postalCode] = "3012 AA"
+            it[city] = "Rotterdam"
+            it[country] = "Netherlands"
+            it[formattedAddress] = "Coolsingel 1, 3012 AA Rotterdam, Netherlands"
             it[locationLat] = 51.9225 // Rotterdam
             it[locationLng] = 4.47917
             it[isActive] = true
@@ -91,6 +96,11 @@ suspend fun seedData() {
             it[category] = CarCategory.BEV
             it[fuelType] = FuelType.ELECTRIC
             it[ratePerHour] = BigDecimal("25.00")
+            it[addressLine1] = "Dam 1"
+            it[postalCode] = "1012 JS"
+            it[city] = "Amsterdam"
+            it[country] = "Netherlands"
+            it[formattedAddress] = "Dam 1, 1012 JS Amsterdam, Netherlands"
             it[locationLat] = 52.3676 // Amsterdam
             it[locationLng] = 4.9041
             it[isActive] = true
@@ -103,6 +113,11 @@ suspend fun seedData() {
             it[category] = CarCategory.FCEV
             it[fuelType] = null // FCEV typically uses hydrogen, not traditional fuel
             it[ratePerHour] = BigDecimal("30.00")
+            it[addressLine1] = "Vredenburg 1"
+            it[postalCode] = "3511 BA"
+            it[city] = "Utrecht"
+            it[country] = "Netherlands"
+            it[formattedAddress] = "Vredenburg 1, 3511 BA Utrecht, Netherlands"
             it[locationLat] = 52.0907 // Utrecht
             it[locationLng] = 5.1214
             it[isActive] = true

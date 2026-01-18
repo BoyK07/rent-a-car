@@ -14,7 +14,12 @@ data class CreateCarRequestDto(
     val fuelType: FuelType? = null,
     @Serializable(with = BigDecimalSerializer::class)
     val ratePerHour: BigDecimal,
-    val locationLat: Double,
-    val locationLng: Double,
+    val addressLine1: String,
+    val addressLine2: String? = null,
+    val postalCode: String,
+    val city: String,
+    val country: String,
+    val locationLat: Double? = null,
+    val locationLng: Double? = null,
     val isActive: Boolean = true
 )

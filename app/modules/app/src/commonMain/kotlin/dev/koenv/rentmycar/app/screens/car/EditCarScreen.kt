@@ -68,8 +68,11 @@ data class EditCarScreen(
         var ratePerHour by remember { mutableStateOf("") }
         var category by remember { mutableStateOf<CarCategory?>(null) }
         var fuelType by remember { mutableStateOf<FuelType?>(null) }
-        var locationLat by remember { mutableStateOf("") }
-        var locationLng by remember { mutableStateOf("") }
+        var addressLine1 by remember { mutableStateOf("") }
+        var addressLine2 by remember { mutableStateOf("") }
+        var postalCode by remember { mutableStateOf("") }
+        var city by remember { mutableStateOf("") }
+        var country by remember { mutableStateOf("") }
         var isActive by remember { mutableStateOf(true) }
         
         var showCategoryMenu by remember { mutableStateOf(false) }
@@ -87,8 +90,11 @@ data class EditCarScreen(
                     ratePerHour = carDto.ratePerHour.toStringExpanded()
                     category = carDto.category
                     fuelType = carDto.fuelType
-                    locationLat = carDto.locationLat.toString()
-                    locationLng = carDto.locationLng.toString()
+                    addressLine1 = carDto.addressLine1 ?: ""
+                    addressLine2 = carDto.addressLine2 ?: ""
+                    postalCode = carDto.postalCode ?: ""
+                    city = carDto.city ?: ""
+                    country = carDto.country ?: ""
                     isActive = carDto.isActive
                     isLoading = false
                 }.onFailure { error ->
@@ -254,20 +260,47 @@ data class EditCarScreen(
                                 }
                             }
                             
-                            // Location Latitude field
+                            // Address line 1
                             OutlinedTextField(
-                                value = locationLat,
-                                onValueChange = { locationLat = it },
-                                label = { Text("Location Latitude") },
+                                value = addressLine1,
+                                onValueChange = { addressLine1 = it },
+                                label = { Text("Street and Number") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
                             
-                            // Location Longitude field
+                            // Address line 2 (optional)
                             OutlinedTextField(
-                                value = locationLng,
-                                onValueChange = { locationLng = it },
-                                label = { Text("Location Longitude") },
+                                value = addressLine2,
+                                onValueChange = { addressLine2 = it },
+                                label = { Text("Address Line 2") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            
+                            // Postal code
+                            OutlinedTextField(
+                                value = postalCode,
+                                onValueChange = { postalCode = it },
+                                label = { Text("Postal Code") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            
+                            // City
+                            OutlinedTextField(
+                                value = city,
+                                onValueChange = { city = it },
+                                label = { Text("City") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            
+                            // Country
+                            OutlinedTextField(
+                                value = country,
+                                onValueChange = { country = it },
+                                label = { Text("Country") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
@@ -307,8 +340,11 @@ data class EditCarScreen(
                                             }.getOrNull()?.takeIf { it != originalCar.ratePerHour },
                                             category = if (category != originalCar.category) category else null,
                                             fuelType = if (fuelType != originalCar.fuelType) fuelType else null,
-                                            locationLat = locationLat.toDoubleOrNull()?.takeIf { it != originalCar.locationLat },
-                                            locationLng = locationLng.toDoubleOrNull()?.takeIf { it != originalCar.locationLng },
+                                            addressLine1 = if (addressLine1 != (originalCar.addressLine1 ?: "")) addressLine1 else null,
+                                            addressLine2 = if (addressLine2 != (originalCar.addressLine2 ?: "")) addressLine2 else null,
+                                            postalCode = if (postalCode != (originalCar.postalCode ?: "")) postalCode else null,
+                                            city = if (city != (originalCar.city ?: "")) city else null,
+                                            country = if (country != (originalCar.country ?: "")) country else null,
                                             isActive = if (isActive != originalCar.isActive) isActive else null
                                         )
                                         

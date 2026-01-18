@@ -14,6 +14,11 @@ data class PatchCarRequestDto(
     val fuelType: FuelType? = null,
     @Serializable(with = BigDecimalSerializer::class)
     val ratePerHour: BigDecimal? = null,
+    val addressLine1: String? = null,
+    val addressLine2: String? = null,
+    val postalCode: String? = null,
+    val city: String? = null,
+    val country: String? = null,
     val locationLat: Double? = null,
     val locationLng: Double? = null,
     val isActive: Boolean? = null
