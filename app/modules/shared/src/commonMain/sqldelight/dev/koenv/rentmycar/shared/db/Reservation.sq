@@ -1,0 +1,78 @@
+-- Reservations table schema
+CREATE TABLE Reservation (
+    id TEXT NOT NULL PRIMARY KEY,
+    carId TEXT NOT NULL,
+    renterId TEXT NOT NULL,
+    startTime TEXT NOT NULL,
+    endTime TEXT NOT NULL,
+    status TEXT NOT NULL,
+    priceTotal TEXT NOT NULL,
+    pointsAwarded INTEGER,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL,
+    FOREIGN KEY (carId) REFERENCES Car(id) ON DELETE CASCADE,
+    FOREIGN KEY (renterId) REFERENCES User(id) ON DELETE CASCADE
+);
+
+-- Indexes for better query performance
+CREATE INDEX reservation_car_idx ON Reservation(carId);
+CREATE INDEX reservation_renter_idx ON Reservation(renterId);
+CREATE INDEX reservation_status_idx ON Reservation(status);
+CREATE INDEX reservation_start_time_idx ON Reservation(startTime);
+
+-- Get all reservations
+selectAll:
+SELECT * FROM Reservation;
+
+-- Get reservation by ID
+selectById:
+SELECT * FROM Reservation WHERE id = ?;
+
+-- Get reservations by car
+selectByCar:
+SELECT * FROM Reservation WHERE carId = ?;
+
+-- Get reservations by renter
+selectByRenter:
+SELECT * FROM Reservation WHERE renterId = ?;
+
+-- Get reservations by status
+selectByStatus:
+SELECT * FROM Reservation WHERE status = ?;
+
+-- Get active reservations (PENDING or CONFIRMED)
+selectActive:
+SELECT * FROM Reservation WHERE status IN ('PENDING', 'CONFIRMED');
+
+-- Insert or replace reservation
+insertOrReplace:
+INSERT OR REPLACE INTO Reservation(id, carId, renterId, startTime, endTime, status, priceTotal, pointsAwarded, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Update reservation status
+updateStatus:
+UPDATE Reservation 
+SET status = ?, updatedAt = ?
+WHERE id = ?;
+
+-- Update reservation
+update:
+UPDATE Reservation 
+SET carId = ?, startTime = ?, endTime = ?, status = ?, priceTotal = ?, pointsAwarded = ?, updatedAt = ?
+WHERE id = ?;
+
+-- Delete reservation by ID
+deleteById:
+DELETE FROM Reservation WHERE id = ?;
+
+-- Delete all reservations
+deleteAll:
+DELETE FROM Reservation;
+
+-- Count all reservations
+countAll:
+SELECT COUNT(*) FROM Reservation;
+
+-- Count reservations by status
+countByStatus:
+SELECT COUNT(*) FROM Reservation WHERE status = ?;

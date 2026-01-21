@@ -1,0 +1,52 @@
+-- Users table schema
+CREATE TABLE User (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+-- Indexes for better query performance
+CREATE INDEX user_email_idx ON User(email);
+CREATE INDEX user_role_idx ON User(role);
+
+-- Get all users
+selectAll:
+SELECT * FROM User;
+
+-- Get user by ID
+selectById:
+SELECT * FROM User WHERE id = ?;
+
+-- Get user by email
+selectByEmail:
+SELECT * FROM User WHERE email = ?;
+
+-- Get users by role
+selectByRole:
+SELECT * FROM User WHERE role = ?;
+
+-- Insert or replace user
+insertOrReplace:
+INSERT OR REPLACE INTO User(id, name, email, role, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Update user
+update:
+UPDATE User 
+SET name = ?, email = ?, role = ?, updatedAt = ?
+WHERE id = ?;
+
+-- Delete user by ID
+deleteById:
+DELETE FROM User WHERE id = ?;
+
+-- Delete all users
+deleteAll:
+DELETE FROM User;
+
+-- Count all users
+countAll:
+SELECT COUNT(*) FROM User;

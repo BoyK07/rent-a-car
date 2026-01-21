@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  # Server with H2 in-memory (for quick testing)
+  server-h2:
+    build:
+      context: .
+      dockerfile: app/modules/server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PROVIDER=h2
+      - KTOR_ENV=development
+      - JWT_SECRET=dev-secret-change-in-production
+    profiles:
+      - h2
+    restart: unless-stopped
+
+  # Server with MariaDB (for production-like setup)
+  server:
+    build:
+      context: .
+      dockerfile: app/modules/server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PROVIDER=mariadb
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=rentmycar
+      - DB_USER=rentmycar
+      - DB_PASSWORD=rentmycar_password
+      - JWT_SECRET=dev-secret-change-in-production
+      - KTOR_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - mariadb
+
+  # MariaDB Database
+  db:
+    image: mariadb:11.8
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=rentmycar
+      - MYSQL_USER=rentmycar
+      - MYSQL_PASSWORD=rentmycar_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - mariadb
+
+volumes:
+  mariadb-data:
+    driver: local
+
+# Usage:
+#
+# Development with H2 (no database needed):
+#   docker-compose --profile h2 up
+#
+# Development with MariaDB:
+#   docker-compose --profile mariadb up
+#
+# Production with existing database:
+#   docker-compose up server
+#   (Configure DB_* environment variables to point to your database)

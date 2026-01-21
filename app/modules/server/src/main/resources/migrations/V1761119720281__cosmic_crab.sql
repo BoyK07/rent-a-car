@@ -1,0 +1,3 @@
+ALTER TABLE cars
+    ADD brand VARCHAR(100) NOT NULL;
+ALTER TABLE cars DROP COLUMN make;

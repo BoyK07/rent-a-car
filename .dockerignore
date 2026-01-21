@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# GitHub
+.github
+
+# Documentation
+docs
+*.md
+LICENSE
+
+# Build artifacts
+**/build/
+**/dist/
+**/.gradle/
+**/out/
+
+# IDE
+.idea
+.vscode
+*.iml
+*.swp
+*.swo
+*~
+
+# Android
+app/modules/app/
+**/local.properties
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+**/test-results/
+**/reports/
+
+# Temp files
+**/tmp/
+**/.tmp/
+
+# Node modules (if any)
+**/node_modules/
+
+# Dev container
+.devcontainer/

@@ -74,6 +74,130 @@ Het doel van **Rent My Car** is om:
 
 ---
 
+## CI/CD en Releases
+
+Het project maakt gebruik van GitHub Actions voor geautomatiseerde builds en releases:
+
+### Workflows
+
+#### CI Workflow
+- **Trigger**: Push/PR naar `main` of `develop` branches
+- **Functionaliteit**: Bouwt en test alle modules (app, server, shared)
+- **Badge**: ![CI](https://github.com/DevKoenv/rent-a-car/workflows/CI/badge.svg)
+
+#### Build Android App
+- **Trigger**: Push naar `main` (met wijzigingen in app/shared modules)
+- **Output**: Debug en Release APK's
+- **Artifacts**: Beschikbaar voor 30 dagen
+
+#### Build Server
+- **Trigger**: Push naar `main` (met wijzigingen in server/shared modules)
+- **Output**: Server JAR en Fat JAR
+- **Artifacts**: Beschikbaar voor 30 dagen
+
+#### Release Workflow
+- **Trigger**: Push van een tag met format `v*` (bijvoorbeeld `v1.0.0`)
+- **Output**: 
+  - Android APK
+  - Android AAB (voor Play Store)
+  - Server Fat JAR
+- **Functionaliteit**: Creëert automatisch een GitHub Release met alle artifacts
+
+### Een Release Maken
+
+Om een nieuwe release te maken:
+
+```bash
+# Tag de huidige commit met een versienummer
+git tag -a v1.0.0 -m "Release version 1.0.0"
+
+# Push de tag naar GitHub
+git push origin v1.0.0
+```
+
+Dit triggert automatisch de release workflow die:
+1. Alle modules bouwt (Android app + Server)
+2. Een GitHub Release creëert
+3. Alle build artifacts toevoegt aan de release
+4. Release notes genereert met download instructies
+
+### Deployment
+
+**Android App**: Download de APK van de releases pagina en installeer op Android apparaten (API 24+)
+
+**Server**: 
+
+Optie 1 - Docker (aanbevolen voor productie):
+```bash
+# Build de Docker image
+docker build -f app/modules/server/Dockerfile -t rentmycar-server:latest .
+
+# Start de server
+docker run -d \
+  --name rentmycar-server \
+  -p 8080:8080 \
+  -e DB_PROVIDER=mariadb \
+  -e DB_HOST=your-db-host \
+  -e DB_USER=rentmycar \
+  -e DB_PASSWORD=your-password \
+  -e JWT_SECRET=your-secure-secret \
+  rentmycar-server:latest
+```
+
+Optie 2 - Docker Compose (lokale ontwikkeling):
+```bash
+# Start server + database
+docker-compose up -d
+
+# Bekijk logs
+docker-compose logs -f server
+```
+
+Optie 3 - Direct met JAR:
+```bash
+java -jar rentmycar-server-{version}.jar
+```
+
+Zie [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) voor gedetailleerde instructies.
+
+---
+
+## Database Configuratie
+
+Het project ondersteunt meerdere database providers voor verschillende use cases:
+
+- **H2 In-Memory** (standaard): Voor snelle lokale ontwikkeling en testen zonder externe database
+- **H2 File-Based**: Voor lokale ontwikkeling met data persistentie
+- **MariaDB External**: Voor productie en staging omgevingen
+
+### Snelle Start
+
+Standaard gebruikt de applicatie H2 in-memory – gewoon starten zonder extra configuratie:
+```bash
+cd app
+./gradlew :server:run
+```
+
+Voor andere database providers, gebruik omgevingsvariabelen:
+```bash
+# H2 file-based (met persistentie)
+DB_PROVIDER=h2-file ./gradlew :server:run
+
+# Externe MariaDB
+DB_PROVIDER=mariadb DB_HOST=localhost DB_PASSWORD=your-password ./gradlew :server:run
+```
+
+### Voor Tests
+
+Tests gebruiken automatisch H2 in-memory met een schone database:
+```bash
+./gradlew :server:test
+```
+
+Zie [Database Configuration Guide](docs/DATABASE_CONFIGURATION.md) voor gedetailleerde configuratie opties, troubleshooting, en best practices.
+
+---
+
 ## Licentie
 
 Dit project is gelicentieerd onder de MIT License – zie het [LICENSE-bestand](LICENSE) voor meer informatie.

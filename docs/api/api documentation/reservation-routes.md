@@ -16,10 +16,13 @@ Base URL: `http://localhost:8080`
 - Route protection:
   - All reservations routes require any authenticated role: `ADMIN`, `DRIVER`, or `MEMBER`.
   - `DELETE /api/v1/reservations/{id}` requires `ADMIN` or `DRIVER`.
+- Authorization:
+  - Non-admin users can only view, modify, and cancel their own reservations.
+  - Admin users can view and modify all reservations.
 
 Notes:
 - `ReservationStatus` = `PENDING` | `CONFIRMED` | `CANCELLED` | `COMPLETED`.
-- Date-time fields are UNIX timestamps in milliseconds (UTC). Example: `1761300000000`.
+- Date-time fields use ISO 8601 format (LocalDateTime). Example: `2025-10-24T10:00:00`.
 - Prices (`priceTotal`) must be JSON strings (e.g. "79.99").
 
 ### Endpoints
@@ -27,7 +30,10 @@ Notes:
 #### GET /api/v1/reservations (secured)
 List reservations with optional filters.
 - Query params: `renterId`, `carId`, `status`, `start`, `end`
+- DateTime params (`start`, `end`) must be in ISO 8601 format (e.g., `2025-10-01T00:00:00`)
 - Example: `/api/v1/reservations?status=CONFIRMED&start=2025-10-01T00:00:00&end=2025-10-31T23:59:59`
+- Non-admin users can only see their own reservations, regardless of filters.
+- Admin users can see all reservations.
 
 Response 200:
 ```json
@@ -47,9 +53,11 @@ Response 200:
 
 #### GET /api/v1/reservations/{id} (secured)
 Get reservation by ID.
+- Non-admin users can only view their own reservations.
 
 Responses:
 - 200 with `ReservationDto`
+- 403 when user is not authorized to view the reservation
 - 404 when not found
 
 #### POST /api/v1/reservations (secured)
@@ -71,6 +79,7 @@ Responses:
 
 #### PUT /api/v1/reservations/{id} (secured)
 Replace a reservation entirely.
+- Non-admin users can only modify their own reservations.
 
 Request body (all required):
 ```json
@@ -90,6 +99,7 @@ Responses:
 
 #### PATCH /api/v1/reservations/{id} (secured)
 Partially update fields.
+- Non-admin users can only modify their own reservations.
 
 Request body (all optional):
 ```json
@@ -101,33 +111,44 @@ Request body (all optional):
 
 Responses:
 - 200 with updated `ReservationDto`
+- 403 when user is not authorized to modify the reservation
 - 404 when not found
 
 #### DELETE /api/v1/reservations/{id} (secured: ADMIN or DRIVER)
 Delete a reservation.
+- Non-admin users can only delete their own reservations.
 
 Responses:
 - 204 when deleted
+- 403 when user is not authorized to delete the reservation
 - 404 when not found
 
 #### POST /api/v1/reservations/{id}/cancel (secured)
 Cancel a reservation. Fails if already `COMPLETED` or `CANCELLED`.
+- Non-admin users can only cancel their own reservations.
 
 Responses:
 - 204 when cancelled
+- 403 when user is not authorized to cancel the reservation
 - 404 when not found or not cancellable
 
 #### GET /api/v1/reservations/active (secured)
 List reservations active at the current time.
+- Non-admin users only see their own active reservations.
+- Admin users see all active reservations.
 
 Responses:
 - 200 with array of `ReservationDto`
 
 #### GET /api/v1/reservations/{id}/driving-sessions (secured)
 List driving sessions for a reservation.
+- Non-admin users can only view driving sessions for their own reservations.
+- Admin users can view all driving sessions.
 
 Responses:
 - 200 with array of `DrivingSession` objects
+- 403 when user is not authorized to view the driving sessions
+- 404 when reservation not found
 
 ### How to test in Postman
 1) Start the API:

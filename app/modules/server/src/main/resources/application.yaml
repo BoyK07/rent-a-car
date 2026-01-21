@@ -1,0 +1,28 @@
+ktor:
+  application:
+    modules:
+      - dev.koenv.rentmycar.server.ApplicationKt.module
+  deployment:
+    port: 8080
+  development: $KTOR_DEVELOPMENT:true
+  environment: $KTOR_ENV:development
+
+jwt:
+  domain: "https://127.0.0.1:8080/"
+  audience: "rentmycar-api"
+  realm: "Access to RentMyCar API"
+  secret: "$JWT_SECRET:7ea529c97a5c3a28acced8bcbc5f2d8d"
+
+db:
+  provider: "$DB_PROVIDER:h2-file"           # mariadb, mariadb-embedded, h2, h2-memory, h2-file
+  host: "$DB_HOST:localhost"
+  port: "$DB_PORT:3306"
+  name: "$DB_NAME:rentmycar"
+  user: "$DB_USER:root"
+  password: "$DB_PASSWORD:password"
+  path: "$DB_PATH:build/h2db/rentmycar"  # Used only for h2-file provider
+  seed: "$DB_SEED:false"                 # Seed test data on startup (development only)
+
+geocoding:
+  google:
+    apiKey: "$GOOGLE_GEOCODING_API_KEY:AIzaSyCd85a_oJlVExvA27kO8pHKZK7nhCusDr4"
