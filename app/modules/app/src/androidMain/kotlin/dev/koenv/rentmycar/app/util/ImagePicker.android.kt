@@ -1,5 +1,7 @@
 package dev.koenv.rentmycar.app.util
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.net.Uri
@@ -31,7 +33,9 @@ actual fun rememberImagePicker(
 actual fun rememberCameraCapture(
     onImageCaptured: (fileName: String, fileBytes: ByteArray) -> Unit
 ): () -> Unit {
-    val launcher = rememberLauncherForActivityResult(
+    val context = LocalContext.current
+
+    val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         if (bitmap == null) return@rememberLauncherForActivityResult
@@ -40,7 +44,22 @@ actual fun rememberCameraCapture(
         onImageCaptured("camera_photo.jpg", outputStream.toByteArray())
     }
 
-    return { launcher.launch(null) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraLauncher.launch(null)
+        }
+    }
+
+    return {
+        when {
+            context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ->
+                cameraLauncher.launch(null)
+            else ->
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 }
 
 private fun getFileName(context: android.content.Context, uri: Uri): String? {
