@@ -6,3 +6,8 @@ import androidx.compose.runtime.Composable
 expect fun rememberImagePicker(
     onImagePicked: (fileName: String, fileBytes: ByteArray) -> Unit
 ): () -> Unit
+
+@Composable
+expect fun rememberCameraCapture(
+    onImageCaptured: (fileName: String, fileBytes: ByteArray) -> Unit
+): () -> Unit
