@@ -38,6 +38,7 @@ import dev.koenv.rentmycar.shared.domain.enums.CarCategory
 import dev.koenv.rentmycar.shared.domain.enums.FuelType
 import dev.koenv.rentmycar.shared.dto.car.CreateCarAvailabilityRequestDto
 import dev.koenv.rentmycar.shared.dto.car.CreateCarRequestDto
+import dev.koenv.rentmycar.app.util.rememberCameraCapture
 import dev.koenv.rentmycar.app.util.rememberImagePicker
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
@@ -92,6 +93,10 @@ class AddCarScreen : Screen {
         var showFuelTypeMenu by remember { mutableStateOf(false) }
 
         val pickImage = rememberImagePicker { fileName, fileBytes ->
+            selectedPhotoName = fileName
+            selectedPhotoBytes = fileBytes
+        }
+        val capturePhoto = rememberCameraCapture { fileName, fileBytes ->
             selectedPhotoName = fileName
             selectedPhotoBytes = fileBytes
         }
@@ -417,9 +422,17 @@ class AddCarScreen : Screen {
                         )
                         Button(
                             onClick = { pickImage() },
-                            variant = ButtonVariant.Secondary
+                            variant = ButtonVariant.Secondary,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Select Photo")
+                            Text("Upload Photo")
+                        }
+                        Button(
+                            onClick = { capturePhoto() },
+                            variant = ButtonVariant.Secondary,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Take Photo")
                         }
                     }
                 }
